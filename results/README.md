@@ -1,10 +1,9 @@
 # Results
 
-This is the `results` directory, in which you can put analysis outputs and
-processed data. The Snakemake-pipeline will output the results of each software
-in its own directory here, *e.g* `results/fastqc/` or `results/star/`,
-including relevant log-files.
+ `results/multiqc_data/` 
+ open => multiqc_report.html
+ 
 
-[*(back to project home directory)*][sf-home]
+[*(back to main page)*][sf-home]
 
-[sf-home]: https://github.com/NBISweden/NBIS-support-framework
+[sf-home]: https://github.com/Juassis/SMS-6198-22-ITS/tree/main/
