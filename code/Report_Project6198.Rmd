@@ -1,0 +1,574 @@
+---
+title: "NBIS Report"
+subtitle: '`r format(Sys.Date(),format="%d-%b-%Y")`'
+
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+      print: false
+    toc_depth: 4
+    number_sections: true
+    highlight: tango
+    df_print: paged
+    code_folding: "show"
+    self_contained: true
+    keep_md: false
+    encoding: 'UTF-8'
+    #css: "assets/report.css"
+  pdf_document: default
+---
+
+<!-- ----------------------- Do not edit above this ----------------------- -->
+
+```{r,echo=FALSE,include=FALSE}
+# CUSTOM VARIABLES
+
+# custom ggplot theme
+theme_report_h <- function (base_size=12,base_family=NULL,colour="grey60") {
+  theme_bw(base_size=base_size,base_family=base_family) %+replace%
+    theme(
+      panel.border=element_blank(),
+      panel.grid.minor=element_blank(),
+      panel.grid.major.x=element_blank(),
+      legend.position="top",
+      legend.direction="horizontal",
+      legend.justification="center",
+      strip.background=element_blank(),
+      axis.ticks.y=element_blank(),
+      axis.ticks.x=element_line(colour=colour),
+      plot.caption=element_text(hjust=0,colour=colour,size=10),
+      plot.title=element_text(colour=colour),
+      plot.subtitle=element_text(colour=colour)
+    )
+}
+
+# custom ggplot theme
+theme_report <- theme_report_v <- function (base_size=12,base_family=NULL,colour="grey60") {
+  theme_bw(base_size=base_size,base_family=base_family) %+replace%
+    theme(
+      panel.border=element_blank(),
+      panel.grid.minor=element_blank(),
+      panel.grid.major.x=element_blank(),
+      legend.position="right",
+      legend.direction="vertical",
+      legend.justification="center",
+      strip.background=element_blank(),
+      axis.ticks.y=element_blank(),
+      axis.ticks.x=element_line(colour=colour),
+      plot.caption=element_text(hjust=0,colour=colour,size=10),
+      plot.title=element_text(colour=colour),
+      plot.subtitle=element_text(colour=colour)
+    )
+}
+
+# custom ggplot theme
+theme_simple_h <- function (base_size=12,base_family=NULL,colour="grey60") {
+  theme_bw(base_size=base_size,base_family=base_family) %+replace%
+    theme(
+      panel.border=element_blank(),
+      panel.grid=element_blank(),
+      legend.justification="center",
+      legend.position="top",
+      legend.direction="horizontal",
+      strip.background=element_blank(),
+      axis.ticks=element_blank(),
+      axis.text=element_blank(),
+      axis.title=element_blank(),
+      plot.caption=element_text(hjust=0,colour=colour,size=10),
+      plot.title=element_text(colour=colour),
+      plot.subtitle=element_text(colour=colour)
+    )
+}
+
+# custom ggplot theme
+theme_simple_v <- function (base_size=12,base_family=NULL,colour="grey60") {
+  theme_bw(base_size=base_size,base_family=base_family) %+replace%
+    theme(
+      panel.border=element_blank(),
+      panel.grid=element_blank(),
+      legend.justification="center",
+      legend.position="right",
+      legend.direction="vertical",
+      strip.background=element_blank(),
+      axis.ticks=element_blank(),
+      axis.text=element_blank(),
+      axis.title=element_blank(),
+      plot.caption=element_text(hjust=0,colour=colour,size=10),
+      plot.title=element_text(colour=colour),
+      plot.subtitle=element_text(colour=colour)
+    )
+}
+
+#colours
+col_sll_green <- "#95C11E"
+col_sll_blue <- "#0093BD"
+col_sll_orange <- "#EF7C00"
+col_sll_green_light <- "#f4f8e8"
+col_sll_blue_light <- "#e5f4f8"
+col_sll_orange_light <- "#fdf1e5"
+
+# project variables
+rep_nbis_id <- "SMS_6198"
+rep_report_version <- "1.0"
+rep_request <- "Mona N. Högberg"
+rep_request_email <- "mona.n.hogberg@slu.se"
+rep_pi <- "Mona N. Högberg"
+rep_pi_email <- "mona.n.hogberg@slu.se"
+rep_org <- "SLU"
+rep_nbis <- "Juliana Assis"
+rep_nbis_email <- "juliana.assis@nbis.se"
+```
+
+<br>
+
+::: boxy
+__NBIS ID:__ `r rep_nbis_id`   
+__Report Version:__ `r rep_report_version`  
+__Request by:__ `r paste0(rep_request," (",rep_request_email,")")`  
+__Principal Investigator:__ `r paste0(rep_pi," (",rep_pi_email,")")`   
+__Organisation:__ `r rep_org`  
+__NBIS Staff:__ `r paste0(rep_nbis," (",rep_nbis_email,")")`  
+:::
+
+<br>
+
+# Setup
+
+```{r message=FALSE, warning=FALSE}
+## LIBRARIES
+library("dada2")
+library("devtools")
+library("dplyr")
+library("ggplot2")
+library("microbiome")
+library("phangorn") 
+library("phyloseq") 
+library("Rcpp")
+library("reshape2")
+library("tidyr")
+library("vegan")
+library("ShortRead")
+library("Biostrings")
+library("DECIPHER")
+library("SensusR")
+library("gplots")
+library("gridExtra")
+library("grid")
+library("ggpubr")
+library("reshape2")
+library("reshape")
+library("lulu")
+```
+
+# Version
+1.0 
+* Support Request  
+Request sent by the user:
+Mona N. Högberg
+
+# Data  
+96 samples
+
+* Type of data  
+
+ITS amplicon
+
+* Data location
+rackham.uppmax.uu.se
+/proj/snic2022-22-352
+
+* Uppmax project ID
+SNIC 2022/22-352
+
+* NGI Project ID
+P9723
+
+* Database used
+Unite
+
+# Tools
+NFCore-Ampliseq (Dada2)
+
+```{r,echo=FALSE,include=FALSE}
+load("/Users/juliana/Documents/NBIS/Projects/6198/R_Saving/V13Lulu_cleanTax_Phyloseq.RData")
+```
+
+
+```{r}
+#Sample Info
+head(sample_info_tab)
+```
+
+# Workflow
+
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Reading Files
+
+path = "/Users/juliana/Documents/NBIS/Projects/6198/Data/Data2" #Data2
+
+#Renaming
+#_1.fq.gz
+#R2.fastq.gz
+fnFs = sort(list.files(path, pattern="_R1.fastq.gz"))
+fnRs = sort(list.files(path, pattern="_R2.fastq.gz"))
+
+sample.names = sapply(strsplit(fnFs, "_R"), `[`, 1)
+show(sample.names)
+
+fnFs = file.path(path, fnFs)
+fnRs = file.path(path, fnRs)
+
+```
+
+
+```{r, echo=FALSE,include=FALSE, eval = FALSE}
+filt_path = file.path(path, "filtered")
+
+filtFs = file.path(filt_path, paste0(sample.names, "_F_filt.fastq"))
+filtRs = file.path(filt_path, paste0(sample.names, "_R_filt.fastq"))
+#Read Numbers : Rarefaction? Or only after filter. After length 250 (R1), 200 (R2) bad phred score (bellow 20)
+#dev.off()
+```
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Filter Sequences
+plotQualityProfile(fnFs[1:6]) #96
+plotQualityProfile(fnRs[1:6]) #96
+```
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Defining Primers
+FWD <- "CTTGGTCATTTAGAGGAAGTAA"
+REV <- "GCTGCGTTCTTCATCGATGC"  #small
+#REV <- "TCCTCCGCTTATTGATATGC" #large
+```
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Primer Orientation
+allOrients <- function(primer) {
+    # Create all orientations of the input sequence
+    require(Biostrings)
+    dna <- DNAString(primer)  # The Biostrings works w/ DNAString objects rather than character vectors
+    orients <- c(Forward = dna, Complement = complement(dna), Reverse = reverse(dna), 
+        RevComp = reverseComplement(dna))
+    return(sapply(orients, toString))  # Convert back to character vector
+}
+FWD.orients <- allOrients(FWD)
+REV.orients <- allOrients(REV)
+FWD.orients
+```
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Pre Filter
+fnFs.filtN <- file.path(path, "filtN", basename(fnFs)) # Put N-filterd files in filtN/ subdirectory
+fnRs.filtN <- file.path(path, "filtN", basename(fnRs))
+filterAndTrim(fnFs, fnFs.filtN, fnRs, fnRs.filtN, maxN = 0, multithread = FALSE)
+```
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Checkin Primers
+primerHits <- function(primer, fn) {
+    # Counts number of reads in which the primer is found
+    nhits <- vcountPattern(primer, sread(readFastq(fn)), fixed = FALSE)
+    return(sum(nhits > 0))
+}
+rbind(FWD.ForwardReads = sapply(FWD.orients, primerHits, fn = fnFs.filtN[[1]]), 
+    FWD.ReverseReads = sapply(FWD.orients, primerHits, fn = fnRs.filtN[[1]]), 
+    REV.ForwardReads = sapply(REV.orients, primerHits, fn = fnFs.filtN[[1]]), 
+    REV.ReverseReads = sapply(REV.orients, primerHits, fn = fnRs.filtN[[1]]))
+```
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Removing Primers
+cutadapt <- "/opt/homebrew/anaconda3/envs/cutadaptenv/bin/cutadapt" # CHANGE ME to the cutadapt path on your machine
+system2(cutadapt, args = "--version") # Run shell commands from R
+```
+
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Running cutdapt
+path.cut <- file.path(path, "cutadapt")
+if(!dir.exists(path.cut)) dir.create(path.cut)
+fnFs.cut <- file.path(path.cut, basename(fnFs))
+fnRs.cut <- file.path(path.cut, basename(fnRs))
+
+FWD.RC <- dada2:::rc(FWD)
+REV.RC <- dada2:::rc(REV)
+# Trim FWD and the reverse-complement of REV off of R1 (forward reads)
+R1.flags <- paste("-g", FWD, "-a", REV.RC) 
+# Trim REV and the reverse-complement of FWD off of R2 (reverse reads)
+R2.flags <- paste("-G", REV, "-A", FWD.RC) 
+# Run Cutadapt
+for(i in seq_along(fnFs)) {
+  system2(cutadapt, args = c(R1.flags, R2.flags, "-n", 2, # -n 2 required to remove FWD and REV from reads
+                             "-o", fnFs.cut[i], "-p", fnRs.cut[i], # output files
+                             fnFs.filtN[i], fnRs.filtN[i])) # input files
+}
+```
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#sanity check
+rbind(FWD.ForwardReads = sapply(FWD.orients, primerHits, fn = fnFs.cut[[1]]), 
+    FWD.ReverseReads = sapply(FWD.orients, primerHits, fn = fnRs.cut[[1]]), 
+    REV.ForwardReads = sapply(REV.orients, primerHits, fn = fnFs.cut[[1]]), 
+    REV.ReverseReads = sapply(REV.orients, primerHits, fn = fnRs.cut[[1]]))
+```
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Data working 
+
+path.cut = "/Users/juliana/Documents/NBIS/Projects/6198/Data/Data2/cutadapt"
+# Forward and reverse fastq filenames have the format:
+cutFs <- sort(list.files(path.cut, pattern = "_R1.fastq.gz"))
+cutRs <- sort(list.files(path.cut, pattern = "_R2.fastq.gz"))
+sample.names = sapply(strsplit(cutFs, "_R"), `[`, 1)
+show(sample.names)
+cutFs = file.path(path.cut, cutFs)
+cutRs = file.path(path.cut, cutRs)
+```
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Inspect read quality profiles
+
+plotQualityProfile(cutFs[1:2])
+```
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+plotQualityProfile(cutRs[1:2])
+```
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+##Filter and trim
+
+filtFs <- file.path(path.cut, "filtered", basename(cutFs))
+filtRs <- file.path(path.cut, "filtered", basename(cutRs))
+```
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+out <- filterAndTrim(cutFs, filtFs, cutRs, filtRs,
+                     maxN = 0,maxEE = c(2, 2),
+                     trimLeft = c(0,10), 
+                     truncQ = 2, minLen = 50,
+                     rm.phix = TRUE, compress = TRUE,
+                     multithread = FALSE)  # on windows, set multithread = FALSE
+head(out)
+```
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+
+filt_path = "/Users/juliana/Documents/NBIS/Projects/6198/Data/Data2/cutadapt/filtered/"
+#filt_path = file.path(path, "/Users/juliana/Documents/NBIS/Projects/6198/Data/Data2/cutadapt/filtered/")
+
+filtFs = file.path(filt_path, paste0(sample.names, "_R1.fastq.gz"))
+filtRs = file.path(filt_path, paste0(sample.names, "_R2.fastq.gz"))
+#dev.off()
+```
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+table(file.exists(filtFs)) 
+table(file.exists(filtRs))
+plotQualityProfile(filtFs[1:6])
+plotQualityProfile(filtFs[1:6])
+```
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+errF <- learnErrors(filtFs, multithread = TRUE)
+errR <- learnErrors(filtRs, multithread = TRUE)
+
+#errF = learnErrors(filtFs, nbases = 1e8, multithread=TRUE, randomize=TRUE, MAX_CONSIST=15)
+#errR = learnErrors(filtRs, nbases = 1e8, multithread=TRUE, randomize=TRUE, MAX_CONSIST=15)
+
+```
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Plot Error Rate
+
+plotErrors(errF, nominalQ = TRUE)
+plotErrors(errR, nominalQ = TRUE)
+
+```
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Dereplicate identical reads
+
+derepFs <- derepFastq(filtFs, 
+                      verbose = TRUE)
+
+derepRs <- derepFastq(filtRs, 
+                      verbose = TRUE)
+
+# Name the derep-class objects by the sample names
+names(derepFs) <- sample.names
+names(derepRs) <- sample.names
+```
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Sample Inference
+
+dadaFs <- dada(derepFs, 
+               err = errF, 
+               multithread = TRUE)
+
+dadaRs <- dada(derepRs, 
+               err = errR, 
+               multithread = TRUE)
+```
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Merge paired reads
+mergers <- mergePairs(dadaFs, 
+                      derepFs, 
+                      dadaRs, 
+                      derepRs, 
+                      verbose=TRUE)
+```
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Construct Sequence Table
+seqtab <- makeSequenceTable(mergers)
+dim(seqtab)
+```
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Remove chimeras
+seqtab.nochim <- removeBimeraDenovo(seqtab, 
+                                    method="consensus", 
+                                    multithread=TRUE, 
+                                    verbose=TRUE)
+```
+
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Track reads through the pipeline
+getN <- function(x) sum(getUniques(x))
+
+track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, 
+    getN), rowSums(seqtab.nochim))
+
+
+colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", 
+    "nonchim")
+
+rownames(track) <- sample.names
+```
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Distribution of sequence lengths:
+table(nchar(getSequences(seqtab.nochim)))
+```
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+table(nchar(getSequences(seqtab)))
+
+```
+
+```{r}
+hist(nchar(getSequences(seqtab.nochim)), main="Distribution of sequence lengths")
+sum(seqtab.nochim)/sum(seqtab)
+```
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+head(track)
+ma <- data.matrix(track)
+barplot((ma), main ="Track Reads", font.axis = 1, cex.axis=1 ) 
+barplot2(ma)
+```
+
+# Summary
+
+Help is needed with running the "nfcore/ampliseq" pipeline developed
+at NGI for the analyses of fungal ITS1 amplicons, Illumina Miseq
+analysis NGI project ID P5953 (M.Hogberg_17_01_project summary from
+2018-01-19 by Chuan Wang refers to P9723, >=Q30 (mean(SD), 70(2) (%),
+Sum Reads=15 650 000, Mean reads per sample 171 711, 1 pool of
+amplicons, 1 flowcell v3, PE 2x301bp (validated method),
+demultiplexing, quality control and raw data delivery on Uppmax
+(validated method). Agreement number M.Hogberg_16_01-20160826. Grus
+delivery project delivery 00654. Because my support application
+2019-01-17 was rejected, I have collaborated with partners in US on
+this matter but all is extremely delayed for known reasons. I got some
+hope today when I read about the recently developed pipeline for
+fungal analyses! Unfortunately, I have no programming skills but have
+a BSc in Molecular Biology.
+
+Short summary of the work.  
+
+# Further Work  
+
+Further steps to be taken (if needed).
+
+# References
+
+Relevant references for methods, tools etc.
+
+# Deliverables  
+
+Files delivered to the user with descriptions.
+
+## Directory  
+
+```sh
+/data/processed/b/
+
+8 directories, 18 files
+```
+
+Total size is XX GB.
+
+# Timeline
+
+# Practical Info  
+## Data responsibility
+
+The responsibility for data archiving lies with the PI of the project. We do not offer long-term storage or retrieval of data.
+
++ __NBIS & Uppnex: __ We kindly ask that you remove the files from UPPMAX/UPPNEX. The main storage at UPPNEX is optimized for high-speed and parallel access, which makes it expensive and not the right place for longer time archiving. Please consider others by not taking up the expensive space. Please note that UPPMAX is a resource separate from the Bioinformatics Platform, administered by the Swedish National Infrastructure for Computing (SNIC) and SNIC-specifc project rules apply to all projects hosted at UPPMAX.   
++ __Sensitive data :__ Please note that special considerations may apply to the human-derived legally considered sensitive personal data. These should be handled according to specific laws and regulations as outlined e.g. [here](http://nbis.se/support/human-data.html).  
++ __Long-term backup :__ We recommend asking your local IT for support with long-term data archiving. Also a newly established [Data Office](https://www.scilifelab.se/data/) at SciLifeLab may be of help to discuss other options.  
+
+## Acknowledgments
+
+If you are presenting the results in a paper, at a workshop or conference, we kindly ask you to acknowledge us.
+
++ __NBIS staff__ are encouraged to be co-authors when this is merited in accordance to the ethical recommendations for authorship, e.g. [ICMJE recommendations](http://www.icmje.org/recommendations/browse/roles-and-responsibilities/defining-the-role-of-authors-and-contributors.html). If applicable, please include __Juliana, Assis Geraldo, National Bioinformatics Infrastructure Sweden, Science for Life Laboratory, NBIS__, as co-author. In other cases, NBIS would be grateful if support by us is acknowledged in publications according to this example:
+
+> "Support by NBIS (National Bioinformatics Infrastructure Sweden) is gratefully acknowledged."
+
++ __UPPMAX__ kindly asks you to [acknowledge UPPMAX and SNIC](https://www.uppmax.uu.se/support/faq/general-miscellaneous-faq/acknowledging-uppmax--snic--and-uppnex/). If applicable, please add:
+
+> "The computations were performed on resources provided by SNIC through Uppsala Multidisciplinary Center for Advanced Computational Science (UPPMAX) under Project SNIC 2022-22-352."
+
++ __NGI :__ For publications based on data from NGI Sweden, NGI, SciLifeLab and UPPMAX should be [acknowledged](https://ngisweden.scilifelab.se/info/faq#how-do-i-acknowledge-ngi-in-my-publication) like so:  
+
+> "The authors would like to acknowledge support from Science for Life Laboratory (SciLifeLab), the National Genomics Infrastructure (NGI), and Uppsala Multidisciplinary Center for Advanced Computational Science (UPPMAX) for providing assistance in massive parallel sequencing and computational infrastructure."
+
+# Support Completion  
+
+You should soon be contacted by one of our managers with a request to close down the project in our internal system and for invoicing matters. If we do not hear from you within 30 days the project will be automatically closed and invoice sent. Again, we would like to remind you about data responsibility and acknowledgements, see sections: **Data Responsibility** and **Acknowledgments**.
+
+You are welcome to come back to us with further data analysis request at any time via http://nbis.se/support/support.html.
+
+Thank you for using NBIS.
