@@ -193,9 +193,8 @@ Unite
 NFCore-Ampliseq (Dada2)
 
 ```{r,echo=FALSE,include=FALSE}
-load("/Users/juliana/Documents/NBIS/Projects/6198/R_Saving/V13Lulu_cleanTax_Phyloseq.RData")
+load("/Users/juliana/Documents/NBIS/Projects/6198/R_Saving/SMS_Phyloseq.RData")
 ```
-
 
 ```{r}
 #Sample Info
@@ -204,13 +203,9 @@ head(sample_info_tab)
 
 # Workflow
 
-
-
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Reading Files
-
 path = "/Users/juliana/Documents/NBIS/Projects/6198/Data/Data2" #Data2
-
 #Renaming
 #_1.fq.gz
 #R2.fastq.gz
@@ -222,13 +217,10 @@ show(sample.names)
 
 fnFs = file.path(path, fnFs)
 fnRs = file.path(path, fnRs)
-
 ```
-
 
 ```{r, echo=FALSE,include=FALSE, eval = FALSE}
 filt_path = file.path(path, "filtered")
-
 filtFs = file.path(filt_path, paste0(sample.names, "_F_filt.fastq"))
 filtRs = file.path(filt_path, paste0(sample.names, "_R_filt.fastq"))
 #Read Numbers : Rarefaction? Or only after filter. After length 250 (R1), 200 (R2) bad phred score (bellow 20)
@@ -240,15 +232,12 @@ filtRs = file.path(filt_path, paste0(sample.names, "_R_filt.fastq"))
 plotQualityProfile(fnFs[1:6]) #96
 plotQualityProfile(fnRs[1:6]) #96
 ```
-
-
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Defining Primers
 FWD <- "CTTGGTCATTTAGAGGAAGTAA"
 REV <- "GCTGCGTTCTTCATCGATGC"  #small
 #REV <- "TCCTCCGCTTATTGATATGC" #large
 ```
-
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Primer Orientation
@@ -265,14 +254,12 @@ REV.orients <- allOrients(REV)
 FWD.orients
 ```
 
-
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Pre Filter
 fnFs.filtN <- file.path(path, "filtN", basename(fnFs)) # Put N-filterd files in filtN/ subdirectory
 fnRs.filtN <- file.path(path, "filtN", basename(fnRs))
 filterAndTrim(fnFs, fnFs.filtN, fnRs, fnRs.filtN, maxN = 0, multithread = FALSE)
 ```
-
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Checkin Primers
@@ -287,14 +274,11 @@ rbind(FWD.ForwardReads = sapply(FWD.orients, primerHits, fn = fnFs.filtN[[1]]),
     REV.ReverseReads = sapply(REV.orients, primerHits, fn = fnRs.filtN[[1]]))
 ```
 
-
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Removing Primers
 cutadapt <- "/opt/homebrew/anaconda3/envs/cutadaptenv/bin/cutadapt" # CHANGE ME to the cutadapt path on your machine
 system2(cutadapt, args = "--version") # Run shell commands from R
 ```
-
-
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Running cutdapt
@@ -317,7 +301,6 @@ for(i in seq_along(fnFs)) {
 }
 ```
 
-
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #sanity check
 rbind(FWD.ForwardReads = sapply(FWD.orients, primerHits, fn = fnFs.cut[[1]]), 
@@ -326,10 +309,8 @@ rbind(FWD.ForwardReads = sapply(FWD.orients, primerHits, fn = fnFs.cut[[1]]),
     REV.ReverseReads = sapply(REV.orients, primerHits, fn = fnRs.cut[[1]]))
 ```
 
-
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Data working 
-
 path.cut = "/Users/juliana/Documents/NBIS/Projects/6198/Data/Data2/cutadapt"
 # Forward and reverse fastq filenames have the format:
 cutFs <- sort(list.files(path.cut, pattern = "_R1.fastq.gz"))
@@ -340,10 +321,8 @@ cutFs = file.path(path.cut, cutFs)
 cutRs = file.path(path.cut, cutRs)
 ```
 
-
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Inspect read quality profiles
-
 plotQualityProfile(cutFs[1:2])
 ```
 
@@ -353,11 +332,9 @@ plotQualityProfile(cutRs[1:2])
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 ##Filter and trim
-
 filtFs <- file.path(path.cut, "filtered", basename(cutFs))
 filtRs <- file.path(path.cut, "filtered", basename(cutRs))
 ```
-
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 out <- filterAndTrim(cutFs, filtFs, cutRs, filtRs,
@@ -369,7 +346,6 @@ out <- filterAndTrim(cutFs, filtFs, cutRs, filtRs,
                      multithread = TRUE)  # FALSE in M1 mac
 head(out)
 ```
-
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 
@@ -395,7 +371,6 @@ errR <- learnErrors(filtRs, multithread = TRUE)
 #Plot Error Rate
 plotErrors(errF, nominalQ = TRUE)
 plotErrors(errR, nominalQ = TRUE)
-
 ```
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
@@ -412,10 +387,8 @@ names(derepFs) <- sample.names
 names(derepRs) <- sample.names
 ```
 
-
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Sample Inference
-
 dadaFs <- dada(derepFs, 
                err = errF, 
                multithread = TRUE)
@@ -424,7 +397,6 @@ dadaRs <- dada(derepRs,
                err = errR, 
                multithread = TRUE)
 ```
-
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Merge paired reads
@@ -436,13 +408,11 @@ mergers <- mergePairs(dadaFs,
                       verbose=TRUE)
 ```
 
-
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Construct Sequence Table
 seqtab <- makeSequenceTable(mergers)
 dim(seqtab)
 ```
-
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Remove chimeras
@@ -451,8 +421,6 @@ seqtab.nochim <- removeBimeraDenovo(seqtab,
                                     multithread=TRUE, 
                                     verbose=TRUE)
 ```
-
-
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Track reads through the pipeline
@@ -465,12 +433,10 @@ colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged",
 rownames(track) <- sample.names
 ```
 
-
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Distribution of sequence lengths:
 table(nchar(getSequences(seqtab.nochim)))
 ```
-
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 table(nchar(getSequences(seqtab)))
@@ -489,8 +455,6 @@ hist(seqComplexity(seqtab.nochim), 100)
 
 ```
 
-
-
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Assign taxonomy
 unite.ref <- "/Users/juliana/Documents/NBIS/Projects/6198/database/sh_general_release_10.05.2021/sh_general_release_dynamic_10.05.2021.fasta"  # CHANGE ME to location on your machine
@@ -500,15 +464,12 @@ taxa <- assignTaxonomy(seqtab.nochim,
                        tryRC = TRUE)
 ```
 
-
-
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Inspecting the taxonomic assignments:
 taxa.print <- taxa  # Removing sequence rownames for display only
 rownames(taxa.print) <- NULL
 head(taxa.print)
 ```
-
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #### giving seq headers more manageable names (ASV_1, ASV_2...)####
@@ -518,12 +479,9 @@ asv_headers <- vector(dim(seqtab.nochim)[2], mode="character")
 for (i in 1:dim(seqtab.nochim)[2]) {
   asv_headers[i] <- paste(">ASV", i, sep="_")
 }
-
 asv_tax <- taxa
 row.names(asv_tax) <- sub(">", "", asv_headers)
 ```
-
-
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Construct phylogenetic tree
@@ -531,12 +489,10 @@ row.names(asv_tax) <- sub(">", "", asv_headers)
 seqs <- getSequences(taxa)
 names(seqs) <- seqs # This propagates to the tip labels of the tree
 alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA)
-
 phang.align <- phyDat(as(alignment, "matrix"), type="DNA")
 dm <- dist.ml(phang.align)
 treeNJ <- NJ(dm) # Note, tip order != sequence order
 fit = pml(treeNJ, data=phang.align)
-
 fitGTR <- update(fit, k=4, inv=0.2)
 fitGTR <- optim.pml(fitGTR, 
                     model="GTR", 
@@ -548,7 +504,6 @@ detach("package:phangorn", unload=TRUE)
 
 ```
 
-
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 ####Phyloseq Object####
 sample_info_tab <- read.table("/Users/juliana/Documents/NBIS/Projects/6198/Metadado/metadata.tsv", header=T, row.names=1,
@@ -559,10 +514,8 @@ sample_data(sample_info_tab),
 otu_table(seqtab.nochim, taxa_are_rows = FALSE),
 seqs)#,
 #phy_tree(fitGTR$tree)) Not addede
-
 taxa_names(pseq) <- paste0("ASV", seq(ntaxa(pseq)))
 ```
-
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Exporting files
@@ -574,7 +527,6 @@ write.table(export, "otu_table.dada.nochim.txt", sep='\t', row.names=FALSE, quot
 write.table(taxa, "taxa_table.dada.nochim.txt", sep='\t', row.names=FALSE, quote=FALSE)
 write.table(track, "track.txt", sep='\t', row.names=FALSE, quote=FALSE)
 ```
-
 
 ```{bash,echo=FALSE,include=FALSE, eval = FALSE}
 #LULU
@@ -599,7 +551,6 @@ blastn -db seqtab.nochim.fasta -outfmt "6 qseqid sseqid pident" -out match_list.
 physeq <- subset_taxa(pseq, !is.na(Phylum) & !Phylum %in% c("", "uncharacterized"))
 ps0 <- physeq %>% subset_taxa( Family!= "mitochondria" | is.na(Family) & Class!="Chloroplast" | is.na(Class))
 ps = filter_taxa(ps0, function(x) sum(x > 1) > (0.00*length(x)), TRUE)
-
 # Extract abundance matrix from the phyloseq object
 OTU1 = as(otu_table(ps), "matrix")
 # transpose if necessary
@@ -607,7 +558,6 @@ if(taxa_are_rows(ps)){OTU1 <- t(OTU1)}
 # Coerce to data.frame
 OTUdf = as.data.frame(t(OTU1))
 ```
-
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Running Lulu
@@ -622,7 +572,6 @@ curated_result <- lulu(OTUdf, matchlist)
 curated_result$curated_table
 ```
 
-
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #save lulu results
 ASVtablelulu <- curated_result$curated_table
@@ -635,7 +584,6 @@ ASVlulu_retained <- curated_result$curated_otus
 write.csv(ASVlulu_retained, "/Users/juliana/Documents/NBIS/Projects/6198/Working/Lulu/filt_lulu_retained.csv")
 ```
 
-
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Lulu
 #check counts curated and removed
@@ -646,10 +594,8 @@ curated_result$discarded_count
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Prune taxa in phyloseq object based on lulu results  
 #Open discarded taxa file from lulu and convert from data.frame to vector
-
-badTaxa_v <- TXbact_ASVlulu_discards
+badTaxa_v <- ASVlulu_discards
 #note: alternatively, could use the retained file to subset
-
 #prune original ps object by bad taxa and rename to new ps object
 ps
 allTaxa <- taxa_names(ps)
@@ -672,10 +618,158 @@ plyr::ddply(prevdf, "Phylum", function(df1){cbind(mean(df1$Prevalence),sum(df1$P
 
 ```
 
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+# Define phyla to filter
+filterPhyla = c("p__Calcarisporiellomycota")
+# Filter entries with unidentified Phylum.
+ps1 = subset_taxa(ps_lulu, !Phylum %in% filterPhyla)
+ps1
+
+```
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+# Subset to the remaining phyla
+prevdf1 = subset(prevdf, Phylum %in% get_taxa_unique(ps1, "Phylum"))
+ggplot(prevdf1, aes(TotalAbundance, Prevalence / nsamples(ps0),color=Phylum)) +
+  # Include a guess for parameter
+  geom_hline(yintercept = 0.05, alpha = 0.5, linetype = 2) + geom_point(size = 2, alpha = 0.7) +
+  scale_x_log10() +  xlab("Total Abundance") + ylab("Prevalence [Frac. Samples]") +
+  facet_wrap(~Phylum) + theme(legend.position="none")
+```
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Remove taxa not seen more than 2 times in at least 1% of the samples. This protects against an OTU with small mean & trivially large C.V.
+ps2 = filter_taxa(ps1, function(x) sum(x > 2) > (0.01*length(x)), TRUE)
+#  Count prevalence
+length(get_taxa_unique(ps2, taxonomic.rank = "Genus"))
+```
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+# Taxonomy table -> Renamed for plot
+pseq_taxa_df = data.frame(ps2@tax_table, stringsAsFactors = F)
+pseq_taxa_df[is.na(pseq_taxa_df)]<- 'Unknown'
+pseq_taxa_df$Genus_name = pseq_taxa_df$Genus
+pseq_taxa_df$Species_name = pseq_taxa_df$Species
+# Replace NA Genus_name column values
+pseq_taxa_df$Genus_name[which(pseq_taxa_df$Genus_name=='Unknown')] <- pseq_taxa_df$Family[which(pseq_taxa_df$Genus_name=='Unknown')]
+pseq_taxa_df$Genus_name[which(pseq_taxa_df$Genus_name=='Unknown')] <- pseq_taxa_df$Order[which(pseq_taxa_df$Genus_name=='Unknown')]
+pseq_taxa_df$Genus_name[which(pseq_taxa_df$Genus_name=='Unknown')] <- pseq_taxa_df$Class[which(pseq_taxa_df$Genus_name=='Unknown')]
+pseq_taxa_df$Genus_name[which(pseq_taxa_df$Genus_name=='Unknown')] <- pseq_taxa_df$Phylum[which(pseq_taxa_df$Genus_name=='Unknown')]
+pseq_taxa_df$Genus_name[which(pseq_taxa_df$Genus_name=='Unknown')] <- pseq_taxa_df$Kingdom[which(pseq_taxa_df$Genus_name=='Unknown')]
+pseq_taxa_df$Genus_name[which(pseq_taxa_df$Genus_name=='Unknown')] <- 'Unknown'
+# Generate a column with row number
+pseq_taxa_df$ASV_id <- paste('[',seq.int(nrow(pseq_taxa_df)), ']', sep="")
+pseq_taxa_df$ASV <- row.names(pseq_taxa_df)
+# Replace Unknown Species_name
+pseq_taxa_df$Species_name[which(pseq_taxa_df$Species_name=='Unknown')] <- ""
+# Remove .
+pseq_taxa_df$Species_name = stringr::str_replace(pseq_taxa_df$Species_name,"\\.", "/")
+pseq_taxa_df$Species_name = stringr::str_replace(pseq_taxa_df$Species_name,"//", "/")
+# If Species has more than 3 possible names, remove them
+multiaffiliation_species<-which(lengths(strsplit(pseq_taxa_df$Species_name, "/"))>3)
+pseq_taxa_df$Species_name[multiaffiliation_species] <- ""
+# Combine Genus and Species name
+pseq_taxa_df$Genus_Species_name = paste(pseq_taxa_df$Genus_name, pseq_taxa_df$Species_name)
+pseq_taxa_df$Genus_Species_name <- trim.trailing(pseq_taxa_df$Genus_Species_name)
+pseq_taxa_df$taxa_name = paste(pseq_taxa_df$Genus_Species_name, pseq_taxa_df$OTU_id)
+pseq_taxa_df$taxa_name = stringr::str_replace_all(pseq_taxa_df$taxa_name,"\\_", " ")
+pseq_taxa_df[, c('Genus_name', 'Species_name', 'Genus_Species_name')] = list(NULL)
+tax_table(ps2) <- as.matrix(pseq_taxa_df)
+#Exporting
+write_phyloseq(ps2, type = "TAXONOMY")
+write_phyloseq(ps2, type = "METADATA")
+write_phyloseq(ps2, type = "OTU")
+#saveRDS(ps2, "Final_met_Tax.rds") 
+```
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+pseq <- ps2
+summarize_phyloseq(pseq)
+#Pick metadata as data.frame:
+meta <- meta(pseq)
+#Taxonomy table:
+taxonomy <- tax_table(pseq)
+#Abundances for taxonomic groups (‘OTU table’) as a TaxaxSamples matrix:
+# Absolute abundances
+otu.absolute <- abundances(pseq)
+# Relative abundances
+otu.relative <- abundances(pseq, "compositional")
+##Tree
+#phylogenetic<- phy_tree(pseq)
+
+```
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Def Colors
+cols_Type <- c("A" = "#264D59", "B" = "#77A515")
+cols_Ecotype <- c("Meadow" = "#D46C4E", "Spruce-Alder" = "#77A515", "Spruce" = "#264D59", "Alder-zone" = "#43978D", "Pine" = "#43978D")
+cols_Transect <- c("1" = "#264D59", "2" = "#77A515", "3" = "#D46C4E")
+```
 
 
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Alpha Diversity
+alpha_diversity <- estimate_richness(pseq,  measures = c("Shannon", "Observed"))
+df <- data.frame(alpha_diversity, sample_data(pseq))
+df$Transect <- factor(df$Transect, levels = c(1,2,3), labels = c("A","B", "C"))
+df$Ecotype <- factor(df$Ecotype, levels = c("Meadow","Spruce-Alder", "Spruce","Alder zone","Pine"), labels = c("Meadow", "Spruce-Alder", "Spruce","Alder-zone","Pine"))
+```
 
 
+```{r}
+#Shannon
+p2 <- ggplot(df, aes(x=Ecotype, y=Shannon, color = Type))  +
+  theme_pubr(border = TRUE) +
+  geom_point(size=6, alpha = 0.7) +
+  scale_shape_manual(values=c(16,17)) +
+  theme(axis.text.x = element_text(size = 14, hjust = 0.5), 
+        axis.text.y = element_text(size = 14, hjust = 1),
+        axis.title.x.bottom = element_text(size = 18),
+        axis.title.y = element_text(size = 18),
+        legend.position = "top") +
+  scale_colour_manual(values = cols_Type) +
+  facet_grid(~Transect) +
+  labs(hjust = 1, face= "bold", x="Ecotype ", y = "Shannon Diversity") 
+p2
+```
+
+
+```{r}
+#Richness
+p <- ggplot(df, aes(x=Ecotype, y=Observed, color = Type))  +
+  theme_pubr(border = TRUE) +
+  geom_point(size=6) +
+  scale_shape_manual(values=c(16,17)) +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size = 14, hjust = 1),
+        axis.title.x.bottom = element_text(size = 18),
+        axis.title.y = element_text(size = 18),
+        legend.position = "none") +
+  scale_colour_manual(values = cols_Type) + 
+  facet_grid(~Transect) +
+  #ylim(0, 120) +
+  labs(hjust = 1, face= "bold", x=" ", y = "Richness") 
+p
+```
+
+
+```{r}
+#Exporting
+gA <- ggplotGrob(p)
+gB <- ggplotGrob(p2)
+
+#Combine the plots
+g = rbind(gA, gB, size = "first")
+g = rbind(gA, gB, size = "last")
+
+#Draw it
+grid.newpage()
+grid.draw(g)
+
+#ggsave("/Users/juliana/Documents/NBIS/Projects/6198/Results/Fig1A_Alpha_Diversity_All_Samples.pdf", units="in", width=10, height=7.7, dpi=300)
+#dev.off()
+```
 
 
 
