@@ -362,10 +362,11 @@ filtRs <- file.path(path.cut, "filtered", basename(cutRs))
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 out <- filterAndTrim(cutFs, filtFs, cutRs, filtRs,
                      maxN = 0,maxEE = c(2, 2),
-                     trimLeft = c(0,10), 
-                     truncQ = 2, minLen = 50,
+                     #truncLen=c(290,270), 
+                     trimLeft = c(10,30),
+                     truncQ = 2, minLen = 150,
                      rm.phix = TRUE, compress = TRUE,
-                     multithread = FALSE)  # on windows, set multithread = FALSE
+                     multithread = TRUE)  # FALSE in M1 mac
 head(out)
 ```
 
@@ -373,8 +374,6 @@ head(out)
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 
 filt_path = "/Users/juliana/Documents/NBIS/Projects/6198/Data/Data2/cutadapt/filtered/"
-#filt_path = file.path(path, "/Users/juliana/Documents/NBIS/Projects/6198/Data/Data2/cutadapt/filtered/")
-
 filtFs = file.path(filt_path, paste0(sample.names, "_R1.fastq.gz"))
 filtRs = file.path(filt_path, paste0(sample.names, "_R2.fastq.gz"))
 #dev.off()
@@ -390,15 +389,10 @@ plotQualityProfile(filtFs[1:6])
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 errF <- learnErrors(filtFs, multithread = TRUE)
 errR <- learnErrors(filtRs, multithread = TRUE)
-
-#errF = learnErrors(filtFs, nbases = 1e8, multithread=TRUE, randomize=TRUE, MAX_CONSIST=15)
-#errR = learnErrors(filtRs, nbases = 1e8, multithread=TRUE, randomize=TRUE, MAX_CONSIST=15)
-
 ```
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Plot Error Rate
-
 plotErrors(errF, nominalQ = TRUE)
 plotErrors(errR, nominalQ = TRUE)
 
@@ -437,7 +431,8 @@ dadaRs <- dada(derepRs,
 mergers <- mergePairs(dadaFs, 
                       derepFs, 
                       dadaRs, 
-                      derepRs, 
+                      derepRs,
+                      minOverlap = 16,
                       verbose=TRUE)
 ```
 
@@ -465,11 +460,8 @@ getN <- function(x) sum(getUniques(x))
 
 track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, 
     getN), rowSums(seqtab.nochim))
-
-
 colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", 
     "nonchim")
-
 rownames(track) <- sample.names
 ```
 
@@ -482,7 +474,6 @@ table(nchar(getSequences(seqtab.nochim)))
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 table(nchar(getSequences(seqtab)))
-
 ```
 
 ```{r}
@@ -493,9 +484,34 @@ sum(seqtab.nochim)/sum(seqtab)
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 head(track)
 ma <- data.matrix(track)
-barplot((ma), main ="Track Reads", font.axis = 1, cex.axis=1 ) 
-barplot2(ma)
+barplot((track), main ="Track Reads", font.axis = 1, cex.axis=1, beside=TRUE, ylim=range(pretty(c(0,track))))
+hist(seqComplexity(seqtab.nochim), 100)
+
 ```
+
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Assign taxonomy
+unite.ref <- "/Users/juliana/Documents/NBIS/Projects/6198/database/sh_general_release_10.05.2021/sh_general_release_dynamic_10.05.2021.fasta"  # CHANGE ME to location on your machine
+taxa <- assignTaxonomy(seqtab.nochim, 
+                       unite.ref, 
+                       multithread = TRUE, 
+                       tryRC = TRUE)
+```
+
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Inspecting the taxonomic assignments:
+taxa.print <- taxa  # Removing sequence rownames for display only
+rownames(taxa.print) <- NULL
+head(taxa.print)
+```
+
+
+
+
 
 # Summary
 
