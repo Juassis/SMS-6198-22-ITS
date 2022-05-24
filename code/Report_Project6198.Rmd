@@ -510,6 +510,172 @@ head(taxa.print)
 ```
 
 
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#### giving seq headers more manageable names (ASV_1, ASV_2...)####
+asv_seqs <- colnames(seqtab.nochim)
+asv_headers <- vector(dim(seqtab.nochim)[2], mode="character")
+
+for (i in 1:dim(seqtab.nochim)[2]) {
+  asv_headers[i] <- paste(">ASV", i, sep="_")
+}
+
+asv_tax <- taxa
+row.names(asv_tax) <- sub(">", "", asv_headers)
+```
+
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Construct phylogenetic tree
+#Exporting seqs
+seqs <- getSequences(taxa)
+names(seqs) <- seqs # This propagates to the tip labels of the tree
+alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA)
+
+phang.align <- phyDat(as(alignment, "matrix"), type="DNA")
+dm <- dist.ml(phang.align)
+treeNJ <- NJ(dm) # Note, tip order != sequence order
+fit = pml(treeNJ, data=phang.align)
+
+fitGTR <- update(fit, k=4, inv=0.2)
+fitGTR <- optim.pml(fitGTR, 
+                    model="GTR", 
+                    optInv=TRUE, 
+                    optGamma=TRUE,
+                    rearrangement = "stochastic", 
+                    control = pml.control(trace = 0))
+detach("package:phangorn", unload=TRUE)
+
+```
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+####Phyloseq Object####
+sample_info_tab <- read.table("/Users/juliana/Documents/NBIS/Projects/6198/Metadado/metadata.tsv", header=T, row.names=1,
+                              check.names=F, sep="\t")
+
+pseq <- phyloseq(tax_table(taxa), 
+sample_data(sample_info_tab),
+otu_table(seqtab.nochim, taxa_are_rows = FALSE),
+seqs)#,
+#phy_tree(fitGTR$tree)) Not addede
+
+taxa_names(pseq) <- paste0("ASV", seq(ntaxa(pseq)))
+```
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Exporting files
+uniquesToFasta(getUniques(seqtab.nochim), "seqtab.nochim.fasta", ids=paste0("ASV", seq(length(getUniques(seqtab.nochim)))))
+export <- t(seqtab.nochim)
+rownames(export) = paste0("ASV", seq(length(getUniques(seqtab.nochim))))
+export2 <- cbind('#ASVID' = rownames(export), export)
+write.table(export, "otu_table.dada.nochim.txt", sep='\t', row.names=FALSE, quote=FALSE)
+write.table(taxa, "taxa_table.dada.nochim.txt", sep='\t', row.names=FALSE, quote=FALSE)
+write.table(track, "track.txt", sep='\t', row.names=FALSE, quote=FALSE)
+```
+
+
+```{bash,echo=FALSE,include=FALSE, eval = FALSE}
+#LULU
+
+#use local blast installed on computer through the Shell for the match steps
+#if you haven't already done so, install local blast
+#download from ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/
+
+#open Tool/Shell from R Studio
+#make blast database from your refseq file
+#note that the path specification is needed if the working directory in the shell differs from the filepath
+makeblastdb -in seqtab.nochim.fasta -parse_seqids -dbtype nucl
+
+#blast the ASVs against the database
+blastn -db seqtab.nochim.fasta -outfmt "6 qseqid sseqid pident" -out match_list.txt -qcov_hsp_perc 80 -perc_identity 84 -query seqtab.nochim.fasta
+
+```
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Preparing files to Lulu
+#Filter
+physeq <- subset_taxa(pseq, !is.na(Phylum) & !Phylum %in% c("", "uncharacterized"))
+ps0 <- physeq %>% subset_taxa( Family!= "mitochondria" | is.na(Family) & Class!="Chloroplast" | is.na(Class))
+ps = filter_taxa(ps0, function(x) sum(x > 1) > (0.00*length(x)), TRUE)
+
+# Extract abundance matrix from the phyloseq object
+OTU1 = as(otu_table(ps), "matrix")
+# transpose if necessary
+if(taxa_are_rows(ps)){OTU1 <- t(OTU1)}
+# Coerce to data.frame
+OTUdf = as.data.frame(t(OTU1))
+```
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Running Lulu
+#read in match file from local blast
+matchlist <- read.csv(file="/Users/juliana/Documents/NBIS/Projects/6198/Working/Lulu/match_list.txt",sep="\t", header=FALSE, stringsAsFactors = FALSE) 
+str(matchlist)
+```
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Checking results LULU
+curated_result <- lulu(OTUdf, matchlist)
+curated_result$curated_table
+```
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#save lulu results
+ASVtablelulu <- curated_result$curated_table
+write.csv(ASVtablelulu, "/Users/juliana/Documents/NBIS/Projects/6198/Working/Lulu/ASVs_table_lulu.csv")
+
+ASVlulu_discards <- curated_result$discarded_otus
+write.csv(ASVlulu_discards, "/Users/juliana/Documents/NBIS/Projects/6198/Working/Lulu/filt_lulu_discards.csv")
+
+ASVlulu_retained <- curated_result$curated_otus
+write.csv(ASVlulu_retained, "/Users/juliana/Documents/NBIS/Projects/6198/Working/Lulu/filt_lulu_retained.csv")
+```
+
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Lulu
+#check counts curated and removed
+curated_result$curated_count
+curated_result$discarded_count
+```
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Prune taxa in phyloseq object based on lulu results  
+#Open discarded taxa file from lulu and convert from data.frame to vector
+
+badTaxa_v <- TXbact_ASVlulu_discards
+#note: alternatively, could use the retained file to subset
+
+#prune original ps object by bad taxa and rename to new ps object
+ps
+allTaxa <- taxa_names(ps)
+allTaxa <- allTaxa[!(allTaxa %in% badTaxa_v)]
+ps_lulu <- prune_taxa(allTaxa, ps)
+ps_lulu
+```
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+# Compute prevalence of each feature, store as data.frame
+prevdf = apply(X = otu_table(ps_lulu),
+                 MARGIN = ifelse(taxa_are_rows(ps_lulu), yes = 1, no = 2),
+                 FUN = function(x){sum(x > 0)})
+# Add taxonomy and total read counts to this data.frame
+prevdf = data.frame(Prevalence = prevdf,
+                      TotalAbundance = taxa_sums(ps_lulu),
+                      tax_table(ps_lulu))
+
+plyr::ddply(prevdf, "Phylum", function(df1){cbind(mean(df1$Prevalence),sum(df1$Prevalence))})
+
+```
+
+
+
+
+
 
 
 
