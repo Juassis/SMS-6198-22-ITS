@@ -161,6 +161,8 @@ library("ggpubr")
 library("reshape2")
 library("reshape")
 library("lulu")
+library("ggrepel")
+library("ggh4x")
 ```
 
 # Version
@@ -683,7 +685,14 @@ write_phyloseq(ps2, type = "OTU")
 ```
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
-pseq <- ps2
+pseq <- ps_new
+reads_sample <- readcount(pseq)
+# check for first 5 samples
+reads_sample[1:5]
+sample_data(pseq)$Reads_Sample <- reads_sample
+summarize_phyloseq(pseq)
+
+
 summarize_phyloseq(pseq)
 #Pick metadata as data.frame:
 meta <- meta(pseq)
@@ -702,7 +711,7 @@ otu.relative <- abundances(pseq, "compositional")
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Def Colors
 cols_Type <- c("A" = "#264D59", "B" = "#77A515")
-cols_Ecotype <- c("Meadow" = "#D46C4E", "Spruce-Alder" = "#77A515", "Spruce" = "#264D59", "Alder-zone" = "#43978D", "Pine" = "#43978D")
+cols_Ecotype <- c("Meadow" = "#D46C4E", "Spruce-Alder" = "#77A515", "Spruce" = "#264D59", "Alder-zone" = "#43978D", "Pine" = "#d49c4e")
 cols_Transect <- c("1" = "#264D59", "2" = "#77A515", "3" = "#D46C4E")
 ```
 
@@ -717,60 +726,189 @@ df$Ecotype <- factor(df$Ecotype, levels = c("Meadow","Spruce-Alder", "Spruce","A
 
 
 ```{r}
-#Shannon
-p2 <- ggplot(df, aes(x=Ecotype, y=Shannon, color = Type))  +
+##Plot measures
+dose.labs <- c("Richness", "Shannon")
+names(dose.labs) <- c("Observed", "Shannon")
+##BoxPlots
+
+#Scale
+scales <- list(
+  scale_y_continuous(limits = c(0,400)
+            ))
+
+##
+df %>% 
+  gather(key = metric, value = value, c("Observed", "Shannon")) %>%
+  mutate(metric = factor(metric, levels = c("Observed", "Shannon"))) %>%
+  ggplot(aes(x = Ecotype, y = value, color = Ecotype)) + #,shape = Type
+  #geom_point(size=4) +
+  geom_boxplot(outlier.color = NA) +
+  geom_jitter(aes(color = Ecotype), height = 0, width = .2) +
+  geom_text_repel(aes(label = Type), nudge_x = 0.06, size = 3.0, segment.alpha = 0.5) +
+  labs(x = "", y = "") +
   theme_pubr(border = TRUE) +
-  geom_point(size=6, alpha = 0.7) +
-  scale_shape_manual(values=c(16,17)) +
-  theme(axis.text.x = element_text(size = 14, hjust = 0.5), 
-        axis.text.y = element_text(size = 14, hjust = 1),
-        axis.title.x.bottom = element_text(size = 18),
-        axis.title.y = element_text(size = 18),
-        legend.position = "top") +
-  scale_colour_manual(values = cols_Type) +
-  facet_grid(~Transect) +
-  labs(hjust = 1, face= "bold", x="Ecotype ", y = "Shannon Diversity") 
-p2
+  scale_colour_manual(values = cols_Ecotype) +
+  theme(legend.position="top") +
+  theme(legend.title = element_blank()) +
+  facet_nested(metric~Transect, labeller=labeller(metric = dose.labs), scales = "free") +
+  facetted_pos_scales(y = scales) 
+
 ```
 
 
 ```{r}
-#Richness
-p <- ggplot(df, aes(x=Ecotype, y=Observed, color = Type))  +
+
+df %>% 
+  gather(key = metric, value = value, c("Observed", "Shannon")) %>%
+  mutate(metric = factor(metric, levels = c("Observed", "Shannon"))) %>%
+  ggplot(aes(x = Ecotype, y = value, color = Ecotype, shape = Type,group=interaction(Transect, Ecotype))) +
+  geom_point(size=4) + 
+  #geom_line() +
+  geom_text_repel(aes(label = Reads_Sample), nudge_x = 0.06, size = 3.0, segment.alpha = 0.5) +
   theme_pubr(border = TRUE) +
-  geom_point(size=6) +
-  scale_shape_manual(values=c(16,17)) +
-  theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        axis.text.y = element_text(size = 14, hjust = 1),
-        axis.title.x.bottom = element_text(size = 18),
+  theme(axis.text=element_text(size=14), 
+        axis.text.x = element_text(size = 12, hjust = 0.5), 
         axis.title.y = element_text(size = 18),
+        legend.text=element_text(size=8),
         legend.position = "none") +
-  scale_colour_manual(values = cols_Type) + 
-  facet_grid(~Transect) +
-  #ylim(0, 120) +
-  labs(hjust = 1, face= "bold", x=" ", y = "Richness") 
-p
+  scale_colour_manual(values = cols_Ecotype) + 
+  #scale_x_discrete(limits=c("Before", "After")) +
+  labs(x = "", y = "") +
+  theme(legend.position="top")+
+  theme(legend.title = element_blank()) +
+  facet_nested(metric~Transect, labeller=labeller(metric = dose.labs), scales = "free_y", space = "free_x") +
+  facetted_pos_scales(y = scales)
 ```
 
 
 ```{r}
-#Exporting
-gA <- ggplotGrob(p)
-gB <- ggplotGrob(p2)
+###FigS2
+##Replicates
+#Filter all samples with triplicates
+sample_variables(pseq)
+Replicates <- subset_samples(pseq, Type =="A" | Type=="B")
+Replicates
 
-#Combine the plots
-g = rbind(gA, gB, size = "first")
-g = rbind(gA, gB, size = "last")
-
-#Draw it
-grid.newpage()
-grid.draw(g)
-
-#ggsave("/Users/juliana/Documents/NBIS/Projects/6198/Results/Fig1A_Alpha_Diversity_All_Samples.pdf", units="in", width=10, height=7.7, dpi=300)
-#dev.off()
+#Relative Abundance
+Replicates_R <- transform_sample_counts(Replicates, function(otu) otu/sum(otu))
+jsd_dist<- sqrt(phyloseq::distance(Replicates_R, "jsd"))
+pcoa_jsd <- ordinate(Replicates_R, method = "PCoA", distance = jsd_dist)
+#
+exptT = prune_taxa(names(sort(taxa_sums(Replicates_R), TRUE)), Replicates_R)
+ordT2<- sqrt(phyloseq::distance(Replicates_R,Type = "samples", "jsd"))
+pcoa=ordinate(Replicates_R, "PCoA", distance=ordT2)
+#
+Replicates_R@sam_data$Ecotype
+a<-pcoa$values
+b<-as.data.frame(pcoa$vectors)
+samdf<-data.frame(unclass(Replicates_R@sam_data))
+row.names(samdf)<-sample_names(Replicates_R)
+#
+class(jsd_dist)
+distance_matrix<-matrix(jsd_dist)
+distance_matrix<-as.matrix(jsd_dist)
+distance_matrix<-as.data.frame(distance_matrix)
+distance_matrix <-(distance_matrix)
+distance_matrix
+#
+compAll_T <-c("P9723_1001_S1_L001.P9723_1005_S5_L001","P9723_1009_S9_L001.P9723_1013_S13_L001","P9723_1017_S17_L001.P9723_1021_S21_L001","P9723_1025_S25_L001.P9723_1029_S29_L001","P9723_1033_S33_L001.P9723_1037_S37_L001","P9723_1041_S41_L001.P9723_1045_S45_L001","P9723_1049_S49_L001.P9723_1053_S53_L001","P9723_1057_S57_L001.P9723_1061_S61_L001","P9723_1065_S65_L001.P9723_1069_S69_L001","P9723_1073_S73_L001.P9723_1077_S77_L001","P9723_1081_S81_L001.P9723_1085_S85_L001","P9723_1089_S89_L001.P9723_1093_S93_L001","P9723_1002_S2_L001.P9723_1006_S6_L001","P9723_1010_S10_L001.P9723_1014_S14_L001","P9723_1018_S18_L001.P9723_1022_S22_L001","P9723_1026_S26_L001.P9723_1030_S30_L001","P9723_1034_S34_L001.P9723_1038_S38_L001","P9723_1042_S42_L001.P9723_1046_S46_L001","P9723_1050_S50_L001.P9723_1054_S54_L001","P9723_1058_S58_L001.P9723_1062_S62_L001","P9723_1066_S66_L001.P9723_1070_S70_L001","P9723_1074_S74_L001.P9723_1078_S78_L001","P9723_1082_S82_L001.P9723_1086_S86_L001","P9723_1090_S90_L001.P9723_1094_S94_L001","P9723_1011_S11_L001.P9723_1015_S15_L001","P9723_1019_S19_L001.P9723_1023_S23_L001","P9723_1027_S27_L001.P9723_1031_S31_L001","P9723_1035_S35_L001.P9723_1039_S39_L001","P9723_1043_S43_L001.P9723_1047_S47_L001","P9723_1051_S51_L001.P9723_1055_S55_L001","P9723_1059_S59_L001.P9723_1063_S63_L001","P9723_1067_S67_L001.P9723_1071_S71_L001","P9723_1075_S75_L001.P9723_1079_S79_L001","P9723_1083_S83_L001.P9723_1087_S87_L001","P9723_1091_S91_L001.P9723_1095_S95_L001","P9723_1012_S12_L001.P9723_1016_S16_L001","P9723_1020_S20_L001.P9723_1024_S24_L001","P9723_1028_S28_L001.P9723_1032_S32_L001","P9723_1036_S36_L001.P9723_1040_S40_L001","P9723_1044_S44_L001.P9723_1048_S48_L001","P9723_1052_S52_L001.P9723_1056_S56_L001","P9723_1060_S60_L001.P9723_1064_S64_L001","P9723_1068_S68_L001.P9723_1072_S72_L001")
+#
+distance_matrix$samples<-row.names(distance_matrix)
+distance_matrix_melt<-melt.data.frame(distance_matrix, id.vars = "samples")
+distance_matrix_melt$Comparision<-paste(distance_matrix_melt$samples, distance_matrix_melt$variable, sep = ".")
+distance_matrix_melt_filt<-subset(distance_matrix_melt, Comparision %in% compAll_T)
+row.names(distance_matrix_melt_filt)<-as.character(distance_matrix_melt_filt$variable)
+distance_matrix_melt_filt_info<-merge(distance_matrix_melt_filt, samdf, by=0)
+#Factor
+distance_matrix_melt_filt_info$Transect <- factor(distance_matrix_melt_filt_info$Transect, levels = c(1,2,3), labels = c("A","B", "C"))
+distance_matrix_melt_filt_info$Ecotype <- factor(distance_matrix_melt_filt_info$Ecotype, levels = c("Meadow","Spruce-Alder", "Spruce","Alder zone","Pine"), labels = c("Meadow", "Spruce-Alder", "Spruce","Alder-zone","Pine"))
+###Fig3S:C
+#ggsave("Triplicates_Evaluation.pdf", units="in", width=14, height=8, dpi=300)
+sup2 <- ggplot(distance_matrix_melt_filt_info, aes(Ecotype, value, color=Ecotype, shape = Type)) +
+  geom_jitter(shape=16, size = 2, position=position_jitter(0.2), color = "black", alpha = 0.5) +
+  theme_pubr(border = TRUE) +
+  facet_grid(~Transect) +
+  theme(axis.text=element_text(size=14), 
+        axis.text.x = element_text(size = 12, hjust = 0.5), 
+        axis.title.y = element_text(size = 18, hjust = 0.5),
+        legend.text=element_text(size=14), 
+        legend.title=element_text(size=0),
+        legend.position="none",
+        axis.title.x = element_text(size = 18), 
+        strip.text.x = element_text(size = 20, face = "bold"),
+        strip.text.y = element_text(size = 20, face = "bold")) +
+  labs(x="Ecotype", y = "Jensen-Shannon Distance (JSD)") +
+  ylim(0, 1) 
+print(sup2)
+dev.off()
 ```
 
+
+
+```{r}
+###################################################################################################
+####Figura1:B
+###PCOA
+##Relative Abundance
+Plots <- transform_sample_counts(ps2, function(otu) otu/sum(otu))
+#
+expt = prune_taxa(names(sort(taxa_sums(Plots), TRUE)[1:2000]), Plots)
+ord<- sqrt(phyloseq::distance(Plots,Type = "samples", "jsd"))
+pcoa=ordinate(Plots, "PCoA", distance=ord)
+
+ord_DataFrame <- plot_ordination(expt, pcoa, "samples", justDF ="TRUE")
+
+
+#ggsave("BetaDiversity_JSD_TwinShime.pdf", units="in", width=18, height=7.7, dpi=300)
+ord_plot <- (ordplot <- plot_ordination(expt, pcoa, "samples", color="Ecotype") + 
+               geom_point(size = 6, shape = 16) +
+               geom_text_repel(aes(label = Type), nudge_x = 0.04, size = 3.0, segment.alpha = 0.5) +
+               theme_pubr(border = TRUE) +
+               theme(axis.text=element_text(size=14), 
+                     axis.text.x = element_text(size = 12, hjust = 0.5), 
+                     axis.title.y = element_text(size = 18),
+                     legend.text=element_text(size=14), 
+                     legend.title=element_text(size=0),
+                     #legend.position="none",
+                     axis.title.x = element_text(size = 18), 
+                     strip.text.x = element_text(size = 20, face = "bold"))) +
+  scale_colour_manual(values = cols_Ecotype) #+
+labs(x="PCo1 [50.8%]", y = "PCo2 [18.9%]", element_text(face = "bold"))
+#labs(x="PCo1 [49.8%]", y = "PCo2 [17.9%]", element_text(face = "bold"))
+ord_plot
+
+newSTorder = c("Fecal", "AC", "TC", "DC")
+ord_plot$data$Compartment <- as.character(ord_plot$data$Compartment)
+ord_plot$data$Compartment <- factor(ord_plot$data$Compartment, levels=newSTorder)
+print(ord_plot)
+###################################################################################################
+```
+
+```{r}
+ordplot2 <- (ordplot <- plot_ordination(expt, pcoa, "samples", color="Ecotype", shape = "Transect") + 
+               geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.3) + geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.3) +
+               geom_point(size = 5, color = "grey") +
+               geom_text_repel(aes(label = Type), nudge_x = 0.04, size = 3.0, segment.alpha = 0.5) +
+               scale_shape_manual(values=c(23,21,24)) +
+               theme_pubr(border = TRUE) +
+               #coord_fixed(ratio = 1) +
+               theme(axis.text=element_text(size=14), 
+                     axis.text.x = element_text(size = 12, hjust = 0.5), 
+                     axis.title.y = element_text(size = 18),
+                     legend.text=element_text(size=14), 
+                     legend.title=element_text(size=0),
+                     legend.position="bottom",
+                     axis.title.x = element_text(size = 18), 
+                     strip.text.x = element_text(size = 20, face = "bold"))) +
+  scale_color_manual(values = cols_Ecotype)#+
+  labs(x="PCo1 [17.8%]", y = "PCo2 [14.3%]", element_text(face = "bold"))
+
+ordplot2$layers <- ordplot2$layers[-1]
+ordplot2 
+
+ordplot2 + geom_point(data=ord_DataFrame, aes(x = Axis.1, y = Axis.2, fill =Status, size = 4))  +
+  scale_fill_manual(values = cols_Ecotype) 
+```
 
 
 # Summary
