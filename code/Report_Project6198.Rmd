@@ -686,10 +686,7 @@ write_phyloseq(ps2, type = "OTU")
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 pseq <- ps_new
-reads_sample <- readcount(pseq)
-# check for first 5 samples
-reads_sample[1:5]
-sample_data(pseq)$Reads_Sample <- reads_sample
+
 summarize_phyloseq(pseq)
 
 
@@ -718,6 +715,12 @@ cols_Transect <- c("1" = "#264D59", "2" = "#77A515", "3" = "#D46C4E")
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Alpha Diversity
+pseq <- ps_new
+reads_sample <- readcount(pseq)
+# check for first 5 samples
+reads_sample[1:5]
+sample_data(pseq)$Reads_Sample <- reads_sample
+
 alpha_diversity <- estimate_richness(pseq,  measures = c("Shannon", "Observed"))
 df <- data.frame(alpha_diversity, sample_data(pseq))
 df$Transect <- factor(df$Transect, levels = c(1,2,3), labels = c("A","B", "C"))
@@ -733,16 +736,18 @@ names(dose.labs) <- c("Observed", "Shannon")
 
 #Scale
 scales <- list(
-  scale_y_continuous(limits = c(0,400)
+  scale_y_continuous(limits = c(0,500)
             ))
 
 ##
+options(ggrepel.max.overlaps = Inf)
 df %>% 
   gather(key = metric, value = value, c("Observed", "Shannon")) %>%
   mutate(metric = factor(metric, levels = c("Observed", "Shannon"))) %>%
   ggplot(aes(x = Ecotype, y = value, color = Ecotype)) + #,shape = Type
   #geom_point(size=4) +
-  geom_boxplot(outlier.color = NA) +
+  #geom_boxplot(outlier.color = NA) +
+  geom_violin(draw_quantiles = c( 0.5)) +
   geom_jitter(aes(color = Ecotype), height = 0, width = .2) +
   geom_text_repel(aes(label = Type), nudge_x = 0.06, size = 3.0, segment.alpha = 0.5) +
   labs(x = "", y = "") +
@@ -756,8 +761,8 @@ df %>%
 ```
 
 
-```{r}
-
+```{r,echo=FALSE, eval = FALSE}
+options(ggrepel.max.overlaps = Inf)
 df %>% 
   gather(key = metric, value = value, c("Observed", "Shannon")) %>%
   mutate(metric = factor(metric, levels = c("Observed", "Shannon"))) %>%
