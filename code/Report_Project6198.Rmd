@@ -816,11 +816,7 @@ distance_matrix<-as.data.frame(distance_matrix)
 distance_matrix <-(distance_matrix)
 distance_matrix
 #
-compAll_T <-c("P9723_1001_S1_L001.P9723_1005_S5_L001","P9723_1009_S9_L001.P9723_1013_S13_L001","P9723_1017_S17_L001.P9723_1021_S21_L001","P9723_1025_S25_L001.P9723_1029_S29_L001","P9723_1033_S33_L001.P9723_1037_S37_L001","P9723_1041_S41_L001.P9723_1045_S45_L001","P9723_1049_S49_L001.P9723_1053_S53_L001","P9723_1057_S57_L001.P9723_1061_S61_L001","P9723_1065_S65_L001.P9723_1069_S69_L001","P9723_1073_S73_L001.P9723_1077_S77_L001","P9723_1081_S81_L001.P9723_1085_S85_L001","P9723_1089_S89_L001.P9723_1093_S93_L001","P9723_1002_S2_L001.P9723_1006_S6_L001","P9723_1010_S10_L001.P9723_1014_S14_L001","P9723_1018_S18_L001.P9723_1022_S22_L001","P9723_1026_S26_L001.P9723_1030_S30_L001","P9723_1034_S34_L001.P9723_1038_S38_L001","P9723_1042_S42_L001.P9723_1046_S46_L001","P9723_1050_S50_L001.P9723_1054_S54_L001","P9723_1058_S58_L001.P9723_1062_S62_L001","P9723_1066_S66_L001.P9723_1070_S70_L001","P9723_1074_S74_L001.P9723_1078_S78_L001","P9723_1082_S82_L001.P9723_1086_S86_L001","P9723_1090_S90_L001.P9723_1094_S94_L001","P9723_1011_S11_L001.P9723_1015_S15_L001","P9723_1019_S19_L001.P9723_1023_S23_L001","P9723_1027_S27_L001.P9723_1031_S31_L001","P9723_1035_S35_L001.P9723_1039_S39_L001","P9723_1043_S43_L001.P9723_1047_S47_L001","P9723_1051_S51_L001.P9723_1055_S55_L001","P9723_1059_S59_L001.P9723_1063_S63_L001","P9723_1067_S67_L001.P9723_1071_S71_L001","P9723_1075_S75_L001.P9723_1079_S79_L001","P9723_1083_S83_L001.P9723_1087_S87_L001","P9723_1091_S91_L001.P9723_1095_S95_L001","P9723_1012_S12_L001.P9723_1016_S16_L001","P9723_1020_S20_L001.P9723_1024_S24_L001","P9723_1028_S28_L001.P9723_1032_S32_L001","P9723_1036_S36_L001.P9723_1040_S40_L001","P9723_1044_S44_L001.P9723_1048_S48_L001","P9723_1052_S52_L001.P9723_1056_S56_L001","P9723_1060_S60_L001.P9723_1064_S64_L001","P9723_1068_S68_L001.P9723_1072_S72_L001")
-#
-
 compALL_T <-c("P9723_1025_S25_L001.P9723_1029_S29_L001","P9723_1033_S33_L001.P9723_1037_S37_L001","P9723_1041_S41_L001.P9723_1045_S45_L001","P9723_1001_S1_L001.P9723_1005_S5_L001","P9723_1009_S9_L001.P9723_1013_S13_L001","P9723_1017_S17_L001.P9723_1021_S21_L001","P9723_1002_S2_L001.P9723_1006_S6_L001","P9723_1010_S10_L001.P9723_1014_S14_L001","P9723_1018_S18_L001.P9723_1022_S22_L001","P9723_1073_S73_L001.P9723_1077_S77_L001","P9723_1081_S81_L001.P9723_1085_S85_L001","P9723_1089_S89_L001.P9723_1093_S93_L001","P9723_1049_S49_L001.P9723_1053_S53_L001","P9723_1065_S65_L001.P9723_1069_S69_L001","P9723_1050_S50_L001.P9723_1054_S54_L001","P9723_1058_S58_L001.P9723_1062_S62_L001","P9723_1066_S66_L001.P9723_1070_S70_L001","P9723_1026_S26_L001.P9723_1030_S30_L001","P9723_1034_S34_L001.P9723_1038_S38_L001","P9723_1042_S42_L001.P9723_1046_S46_L001","P9723_1027_S27_L001.P9723_1031_S31_L001","P9723_1035_S35_L001.P9723_1039_S39_L001","P9723_1043_S43_L001.P9723_1047_S47_L001","P9723_1011_S11_L001.P9723_1015_S15_L001","P9723_1019_S19_L001.P9723_1023_S23_L001","P9723_1074_S74_L001.P9723_1078_S78_L001","P9723_1082_S82_L001.P9723_1086_S86_L001","P9723_1090_S90_L001.P9723_1094_S94_L001","P9723_1075_S75_L001.P9723_1079_S79_L001","P9723_1083_S83_L001.P9723_1087_S87_L001","P9723_1091_S91_L001.P9723_1095_S95_L001","P9723_1051_S51_L001.P9723_1055_S55_L001","P9723_1059_S59_L001.P9723_1063_S63_L001","P9723_1067_S67_L001.P9723_1071_S71_L001","P9723_1052_S52_L001.P9723_1056_S56_L001","P9723_1060_S60_L001.P9723_1064_S64_L001","P9723_1068_S68_L001.P9723_1072_S72_L001","P9723_1028_S28_L001.P9723_1032_S32_L001","P9723_1036_S36_L001.P9723_1040_S40_L001","P9723_1044_S44_L001.P9723_1048_S48_L001","P9723_1012_S12_L001.P9723_1016_S16_L001","P9723_1020_S20_L001.P9723_1024_S24_L001")
-
 #
 distance_matrix$samples<-row.names(distance_matrix)
 distance_matrix_melt<-melt.data.frame(distance_matrix, id.vars = "samples")
@@ -858,15 +854,16 @@ dev.off()
 ####Figura1:B
 ###PCOA
 ##Relative Abundance
-Plots <- transform_sample_counts(ps2, function(otu) otu/sum(otu))
+Plots <- transform_sample_counts(pseq, function(otu) otu/sum(otu))
 #
-expt = prune_taxa(names(sort(taxa_sums(Plots), TRUE)[1:3000]), Plots)
+expt = prune_taxa(names(sort(taxa_sums(Plots), TRUE)[1:4000]), Plots)
 ord<- sqrt(phyloseq::distance(Plots,Type = "samples", "jsd"))
 pcoa=ordinate(Plots, "PCoA", distance=ord)
 
-ord_DataFrame <- plot_ordination(expt, pcoa, "samples", justDF ="TRUE")
 expt@sam_data$Transect <- factor(expt@sam_data$Transect, levels = c(1,2,3), labels = c("A","B", "C"))
 expt@sam_data$Ecotype <- factor(expt@sam_data$Ecotype, levels = c("Meadow","Spruce-Alder", "Spruce","Alder zone","Pine"), labels = c("Meadow", "Spruce-Alder", "Spruce","Alder-zone","Pine"))
+
+ord_DataFrame <- plot_ordination(expt, pcoa, "samples", justDF ="TRUE")
 
 ordplot2 <- (ordplot <- plot_ordination(expt, pcoa, "samples", color="Ecotype", shape = "Transect") + 
                geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.3) + 
@@ -890,10 +887,66 @@ ordplot2 <- (ordplot <- plot_ordination(expt, pcoa, "samples", color="Ecotype", 
 ordplot2$layers <- ordplot2$layers[-1]
 ordplot2 
 
-ord_DataFrame$Transect <- factor(ord_DataFrame$Transect, levels = c(1,2,3), labels = c("A","B", "C"))
-ordplot2 + geom_point(data=ord_DataFrame, aes(x = Axis.1, y = Axis.2, fill =Ecotype, size = 4))  +
+ordplot2 + 
+  geom_point(data=ord_DataFrame, aes(x = Axis.1, y = Axis.2, fill =Ecotype, size = 4))  +
   scale_fill_manual(values = cols_Ecotype) 
 ```
+
+
+
+```{r}
+#Removing replicates 
+P_Plots <- subset_samples(pseq, Main_Analysis =="Yes")
+```
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Alpha Diversity
+alpha_diversity <- estimate_richness(P_Plots,  measures = c("Shannon", "Observed"))
+df <- data.frame(alpha_diversity, sample_data(P_Plots))
+df$Transect <- factor(df$Transect, levels = c(1,2,3), labels = c("A","B", "C"))
+df$Ecotype <- factor(df$Ecotype, levels = c("Meadow","Spruce-Alder", "Spruce","Alder zone","Pine"), labels = c("Meadow", "Spruce-Alder", "Spruce","Alder-zone","Pine"))
+```
+
+
+```{r}
+##Plot measures
+dose.labs <- c("Richness", "Shannon")
+names(dose.labs) <- c("Observed", "Shannon")
+##BoxPlots
+
+#Scale
+scales <- list(
+  scale_y_continuous(limits = c(0,500)
+            ))
+
+##
+options(ggrepel.max.overlaps = Inf)
+p <- df %>% 
+  gather(key = metric, value = value, c("Observed", "Shannon")) %>%
+  mutate(metric = factor(metric, levels = c("Observed", "Shannon"))) %>%
+  ggplot(aes(x = Ecotype, y = value, color = Ecotype)) + #,shape = Type
+  geom_point(size = 5.5, color = "grey") +
+  labs(x = "", y = "") +
+  theme_pubr(border = TRUE) +
+  scale_colour_manual(values = cols_Ecotype) +
+  theme(legend.position="top") +
+  theme(legend.title = element_blank()) +
+  facet_nested(metric~Transect, labeller=labeller(metric = dose.labs), scales = "free") +
+  facetted_pos_scales(y = scales) 
+
+p + 
+  geom_point(data=p$data, aes(x = Ecotype, y = value, fill =Ecotype, size = 4))  +
+  scale_fill_manual(values = cols_Ecotype) 
+
+```
+
+
+
+
+
+
+
+
 
 
 # Summary
