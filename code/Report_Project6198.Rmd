@@ -168,6 +168,7 @@ library("RColorBrewer")
 
 # Version
 1.0 
+
 * Support Request  
 Request sent by the user:
 Mona N. Högberg
@@ -690,6 +691,9 @@ pseq <- ps_new
 summarize_phyloseq(pseq)
 ```
 
+## Replicates Evaluation
+
+Alpha Diversity Plot comparing the Replicates A and B.
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Def Colors
 cols_Type <- c("A" = "#264D59", "B" = "#77A515")
@@ -764,6 +768,7 @@ df %>%
   facet_nested(metric~Transect, labeller=labeller(metric = dose.labs), scales = "free_y", space = "free_x") +
   facetted_pos_scales(y = scales)
 ```
+Beta Diversity Plot comparing the Replicates A and B.
 
 
 ```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
@@ -819,6 +824,7 @@ sup2 <- ggplot(distance_matrix_melt_filt_info, aes(Ecotype, value, shape = Type)
   ylim(0, 1) 
 print(sup2)
 ```
+Beta Diversity Plot comparing the Replicates A and B.
 
 ```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
 ##PCOA
@@ -868,6 +874,7 @@ df <- data.frame(alpha_diversity, sample_data(P_Plots))
 df$Transect <- factor(df$Transect, levels = c(1,2,3), labels = c("A","B", "C"))
 df$Ecotype <- factor(df$Ecotype, levels = c("Meadow","Spruce-Alder", "Spruce","Alder zone","Pine"), labels = c("Meadow", "Spruce-Alder", "Spruce","Alder-zone","Pine"))
 ```
+Alpha Diversity Plot - A.
 
 ```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
 ##Plot measures
