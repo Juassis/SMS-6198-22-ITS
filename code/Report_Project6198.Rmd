@@ -195,7 +195,7 @@ Unite
 NFCore-Ampliseq (Dada2)
 
 ```{r,echo=FALSE,include=FALSE}
-load("/Users/juliana/Documents/NBIS/Projects/6198/R_Saving/SMS_Phyloseq.RData")
+load("/Users/juliana/Documents/NBIS/Projects/6198/R_Saving/SMS_Phyloseq_VF.RData")
 ```
 
 ```{r}
@@ -885,7 +885,6 @@ ordplot2 <- (ordplot <- plot_ordination(expt, pcoa, "samples", color="Ecotype", 
   labs(x="PCo1 [13.3%]", y = "PCo2 [9.4%]", element_text(face = "bold"))
 
 ordplot2$layers <- ordplot2$layers[-1]
-ordplot2 
 
 ordplot2 + 
   geom_point(data=ord_DataFrame, aes(x = Axis.1, y = Axis.2, fill =Ecotype, size = 4))  +
@@ -941,11 +940,145 @@ p +
 ```
 
 
+```{r}
+##Relative Abundance
+Plots <- transform_sample_counts(P_Plots, function(otu) otu/sum(otu))
+#
+expt = prune_taxa(names(sort(taxa_sums(Plots), TRUE)[1:4000]), Plots)
+ord<- sqrt(phyloseq::distance(Plots,Type = "samples", "jsd"))
+pcoa=ordinate(Plots, "PCoA", distance=ord)
+
+expt@sam_data$Transect <- factor(expt@sam_data$Transect, levels = c(1,2,3), labels = c("A","B", "C"))
+expt@sam_data$Ecotype <- factor(expt@sam_data$Ecotype, levels = c("Meadow","Spruce-Alder", "Spruce","Alder zone","Pine"), labels = c("Meadow", "Spruce-Alder", "Spruce","Alder-zone","Pine"))
+
+ord_DataFrame <- plot_ordination(expt, pcoa, "samples", justDF ="TRUE")
+
+ordplot2 <- (ordplot <- plot_ordination(expt, pcoa, "samples", color="Ecotype", shape = "Transect") + 
+               geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.3) + 
+               geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.3) +
+               geom_point(size = 5, color = "grey") +
+               scale_shape_manual(values=c(23,21,24)) +
+               theme_pubr(border = TRUE) +
+               coord_fixed(ratio = 1) +
+               theme(axis.text=element_text(size=14), 
+                     axis.text.x = element_text(size = 12, hjust = 0.5), 
+                     axis.title.y = element_text(size = 18),
+                     legend.text=element_text(size=14), 
+                     legend.title=element_text(size=0),
+                     legend.position="bottom",
+                     axis.title.x = element_text(size = 18), 
+                     strip.text.x = element_text(size = 20, face = "bold"))) +
+  scale_color_manual(values = cols_Ecotype)+
+  labs(x="PCo1 [13.3%]", y = "PCo2 [9.4%]", element_text(face = "bold"))
+
+ordplot2$layers <- ordplot2$layers[-1]
+
+ordplot2 + 
+  geom_point(data=ord_DataFrame, aes(x = Axis.1, y = Axis.2, fill =Ecotype, size = 4))  +
+  scale_fill_manual(values = cols_Ecotype) 
+```
+
+```{r}
+ordplot3 <- (ordplot <- plot_ordination(expt, pcoa, "samples", color="Ecotype", shape = "Transect") + 
+               geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.3) + 
+               geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.3) +
+               geom_point(size = 5, color = "grey") +
+               scale_shape_manual(values=c(23,21,24)) +
+               theme_pubr(border = TRUE) +
+               coord_fixed(ratio = 1) +
+               theme(axis.text=element_text(size=14), 
+                     axis.text.x = element_text(size = 12, hjust = 0.5), 
+                     axis.title.y = element_text(size = 18),
+                     legend.text=element_text(size=14), 
+                     legend.title=element_text(size=0),
+                     legend.position="bottom",
+                     axis.title.x = element_text(size = 18), 
+                     strip.text.x = element_text(size = 20, face = "bold"))) +
+  scale_color_manual(values = cols_Ecotype)+
+  labs(x="PCo1 [13.3%]", y = "PCo2 [9.4%]", element_text(face = "bold")) +
+  facet_grid(~Transect)
+
+ordplot3$layers <- ordplot3$layers[-1]
+
+ordplot3 + 
+  geom_point(data=ord_DataFrame, aes(x = Axis.1, y = Axis.2, fill =Ecotype, size = 4))  +
+  scale_fill_manual(values = cols_Ecotype)
+```
 
 
+```{r}
+metadata <- as(sample_data(P_Plots), "data.frame")
+dist.bc <- sqrt(phyloseq::distance(P_Plots, method = "jsd"))
+permanova <- adonis2(dist.bc ~ Ecotype + Transect, data = metadata, perm=9999)
+permanova
+```
 
 
+```{r}
+#PlotBar
+phylo.relative <- transform_sample_counts(P_Plots, function(otu) otu/sum(otu))
 
+
+#Subset
+top <- names(sort(taxa_sums(phylo.relative), decreasing=TRUE))[1:50]
+sample_data(phylo.relative)$Transect <- factor(sample_data(phylo.relative)$Transect, levels = c(1,2,3), labels = c("A","B", "C"))
+sample_data(phylo.relative)$Ecotype <- factor(sample_data(phylo.relative)$Ecotype, levels = c("Meadow","Spruce-Alder", "Spruce","Alder zone","Pine"), labels = c("Meadow", "Spruce-Alder", "Spruce","Alder-zone","Pine"))
+
+ps.top <- prune_taxa(top, phylo.relative)
+meta <- data.frame(meta(ps.top))
+Label <- rownames(meta)
+sample_data(ps.top)$Label <- Label
+meta <- data.frame(meta(ps.top))
+
+
+taxonomy <- data.frame(tax_table(ps.top))
+otu.relative <- data.frame(abundances(ps.top, "compositional"))
+
+batch1_taxonomy_otu_metadata <- merge(taxonomy, otu.relative, by=0, all=TRUE)
+colnames(batch1_taxonomy_otu_metadata)
+
+batch1_media_melt <- melt(batch1_taxonomy_otu_metadata, id.vars=c("Row.names", "Kingdom","Phylum", "Class", "Order", "Family", "Genus","Species", "ASV_id","ASV", "taxa_name"))
+colnames(batch1_media_melt) <- c("Row.names", "Kingdom","Phylum", "Class", "Order", "Family", "Genus","Species","ASV_id","ASV", "taxa_name","sample", "RA")
+
+Batch1_taxa_all_metadata2 =  merge(batch1_media_melt, meta, by.x = "sample", by.y = "Label")
+Batch1_taxa_all_metadata2 = Batch1_taxa_all_metadata2[!Batch1_taxa_all_metadata2$Genus =="Unknown",]
+
+
+list_ <- data.frame(Batch1_taxa_all_metadata2 %>%
+                      dplyr::group_by(Genus) %>%
+                      dplyr::summarise(RA_count = sum(as.numeric(RA))) %>%
+                      dplyr::arrange(desc(RA_count)))
+
+list_sp <- list_$Genus
+
+Batch1_taxa_all_metadata2$Species <- factor(Batch1_taxa_all_metadata2$Species, levels = list_sp)
+Batch1_taxa_all_metadata2$taxa_name <- factor(Batch1_taxa_all_metadata2$taxa_name, levels = list_sp)
+Batch1_taxa_all_metadata2$Phylum <- factor(Batch1_taxa_all_metadata2$Phylum, levels = list_sp)
+Batch1_taxa_all_metadata2$Family <- factor(Batch1_taxa_all_metadata2$Family, levels = list_sp)
+Batch1_taxa_all_metadata2$Genus <- factor(Batch1_taxa_all_metadata2$Genus, levels = list_sp)
+
+##Changing the color
+library("RColorBrewer")
+getPalette = colorRampPalette(brewer.pal(9, "Set1"))
+speciesList = unique(tax_table(ps.top)[,"Genus"])
+speciesPalette = getPalette(length(speciesList))
+names(speciesPalette) = speciesList
+#Change for Species, Genus
+
+
+ggplot(data=Batch1_taxa_all_metadata2, aes(x=Ecotype, group = Genus)) +
+  geom_bar(aes(y=RA, fill = Genus),stat="identity", alpha=.7) + #, colour="grey"
+  theme_pubr(border = TRUE) +
+  theme(axis.text.x = element_text(size = 14, hjust = 0.5), 
+        axis.text.y = element_text(size = 14, hjust = 1),
+        axis.title.x.bottom = element_text(size = 18),
+        axis.title.y = element_text(size = 18),
+        legend.position = "right") +
+  scale_fill_manual(values= speciesPalette) +
+  #ylim=c(0,1) +
+  #facetted_pos_scales(y = scales)
+  facet_grid(~Transect, scales = "free", space = "free")
+```
 
 
 
