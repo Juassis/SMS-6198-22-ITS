@@ -694,6 +694,9 @@ summarize_phyloseq(pseq)
 ## Replicates Evaluation
 
 Alpha Diversity Plot comparing the Replicates A and B.
+
+Quality control analysis using matched samples from 3 different Transects: A, B and C of the experiment and replicates samples on each Ecotype.
+Comparison of alpha diversity in technical replicates samples on all Ecotypes from each Transect. ASV richness and ASV Shannon diversity.
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Def Colors
 cols_Type <- c("A" = "#264D59", "B" = "#77A515")
@@ -768,7 +771,7 @@ df %>%
   facet_nested(metric~Transect, labeller=labeller(metric = dose.labs), scales = "free_y", space = "free_x") +
   facetted_pos_scales(y = scales)
 ```
-Beta Diversity Plot comparing the Replicates A and B.
+* Beta Diversity Plot comparing the Replicates A and B.
 
 
 ```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
@@ -824,7 +827,7 @@ sup2 <- ggplot(distance_matrix_melt_filt_info, aes(Ecotype, value, shape = Type)
   ylim(0, 1) 
 print(sup2)
 ```
-Beta Diversity Plot comparing the Replicates A and B.
+* Beta Diversity Plot comparing the Replicates A and B.
 
 ```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
 ##PCOA
@@ -907,6 +910,8 @@ p +
   scale_fill_manual(values = cols_Ecotype) 
 #Rplot_AlphaDiversity_MainAnalysis
 ```
+* Beta Diversity Plot - A.
+
 ```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
 ##Relative Abundance
 Plots <- transform_sample_counts(P_Plots, function(otu) otu/sum(otu))
@@ -941,6 +946,7 @@ ordplot2 +
   scale_fill_manual(values = cols_Ecotype) 
 #Rplot_BetaDiversity_MainAnalysis
 ```
+* Beta Diversity Plot - B.
 
 ```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
 ordplot3 <- (ordplot <- plot_ordination(expt, pcoa, "samples", color="Ecotype", shape = "Transect") + 
@@ -966,12 +972,17 @@ ordplot3 +
   geom_point(data=ord_DataFrame, aes(x = Axis.1, y = Axis.2, fill =Ecotype, size = 4))  +
   scale_fill_manual(values = cols_Ecotype)
 ```
+* Permutational analysis of variance
+
 ```{r, echo=FALSE}
 metadata <- as(sample_data(P_Plots), "data.frame")
 dist.bc <- sqrt(phyloseq::distance(P_Plots, method = "jsd"))
 permanova <- adonis2(dist.bc ~ Ecotype + Transect, data = metadata, perm=9999)
 permanova
 ```
+
+* Relative abundance of the top 50 ASVs
+
 ```{r, fig.width = 20.5, fig.height = 12, echo=FALSE}
 #PlotBar
 phylo.relative <- transform_sample_counts(P_Plots, function(otu) otu/sum(otu))
