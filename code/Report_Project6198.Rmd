@@ -874,7 +874,10 @@ df <- data.frame(alpha_diversity, sample_data(P_Plots))
 df$Transect <- factor(df$Transect, levels = c(1,2,3), labels = c("A","B", "C"))
 df$Ecotype <- factor(df$Ecotype, levels = c("Meadow","Spruce-Alder", "Spruce","Alder zone","Pine"), labels = c("Meadow", "Spruce-Alder", "Spruce","Alder-zone","Pine"))
 ```
-Alpha Diversity Plot - A.
+
+## Main Analysis
+
+* Alpha Diversity Plot - A.
 
 ```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
 ##Plot measures
