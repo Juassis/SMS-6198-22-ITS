@@ -164,6 +164,8 @@ library("lulu")
 library("ggrepel")
 library("ggh4x")
 library("RColorBrewer")
+library("rITSx")
+library("MicEco")
 ```
 
 # Version
@@ -197,7 +199,7 @@ Unite
 NFCore-Ampliseq (Dada2)
 
 ```{r,echo=FALSE,include=FALSE}
-load("/Users/juliana/Documents/NBIS/Projects/6198/R_Saving/SMS_Phyloseq_VF.RData")
+load("/Users/juliana/Documents/NBIS/Projects/6198/R_Saving/SMS_Phyloseq_VF_ITSx_LULU_3652.RData")
 ```
 
 ```{r}
@@ -508,6 +510,7 @@ detach("package:phangorn", unload=TRUE)
 
 ```
 
+
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 ####Phyloseq Object####
 sample_info_tab <- read.table("/Users/juliana/Documents/NBIS/Projects/6198/Metadado/metadata.tsv", header=T, row.names=1,
@@ -532,6 +535,34 @@ write.table(taxa, "taxa_table.dada.nochim.txt", sep='\t', row.names=FALSE, quote
 write.table(track, "track.txt", sep='\t', row.names=FALSE, quote=FALSE)
 ```
 
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#Preparing for filter
+physeq <- subset_taxa(pseq, !is.na(Phylum) & !Phylum %in% c("", "uncharacterized"))
+ps0 <- physeq %>% subset_taxa( Family!= "mitochondria" | is.na(Family) & Class!="Chloroplast" | is.na(Class))
+ps = filter_taxa(ps0, function(x) sum(x > 1) > (0.00*length(x)), TRUE)
+```
+
+```{bash,echo=FALSE,include=FALSE, eval = FALSE}
+#Running ITSx
+ ITSx -i seqtab.nochim.fasta -save_regions ITS1  -o ASVs.ITS1
+```
+
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#ITSx Filter
+#Prune taxa in phyloseq object based on ITSX results  
+good_taxas <- read.table(file="/Users/juliana/Documents/NBIS/Projects/6198/Working/Lulu/ITS_Final/good_taxa_ITS1",sep="\t", header=FALSE, stringsAsFactors = FALSE) 
+str(good_taxa)
+good_taxa <- as.vector(unlist(good_taxas))
+#Keep good taxa
+#prune original ps object by bad taxa and rename to new ps object
+ps
+allTaxa2 <- taxa_names(ps)
+allTaxa2 <- allTaxa2[(allTaxa2 %in% good_taxa)]
+ps_ITS <- prune_taxa(allTaxa2, ps)
+ps_ITS
+```
+
+
 ```{bash,echo=FALSE,include=FALSE, eval = FALSE}
 #LULU
 
@@ -542,23 +573,19 @@ write.table(track, "track.txt", sep='\t', row.names=FALSE, quote=FALSE)
 #open Tool/Shell from R Studio
 #make blast database from your refseq file
 #note that the path specification is needed if the working directory in the shell differs from the filepath
-makeblastdb -in seqtab.nochim.fasta -parse_seqids -dbtype nucl
-
+makeblastdb -in ASVs.ITS1.fasta -parse_seqids -dbtype nucl
+#makeblastdb -in ASVs.ITS1.fasta -parse_seqids -dbtype nucl
 #blast the ASVs against the database
-blastn -db seqtab.nochim.fasta -outfmt "6 qseqid sseqid pident" -out match_list.txt -qcov_hsp_perc 80 -perc_identity 84 -query seqtab.nochim.fasta
+blastn -db ASVs.ITS1.fasta -outfmt "6 qseqid sseqid pident" -out match_list.txt -qcov_hsp_perc 80 -perc_identity 84 -query seqtab.nochim.fasta
 
 ```
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Preparing files to Lulu
-#Filter
-physeq <- subset_taxa(pseq, !is.na(Phylum) & !Phylum %in% c("", "uncharacterized"))
-ps0 <- physeq %>% subset_taxa( Family!= "mitochondria" | is.na(Family) & Class!="Chloroplast" | is.na(Class))
-ps = filter_taxa(ps0, function(x) sum(x > 1) > (0.00*length(x)), TRUE)
 # Extract abundance matrix from the phyloseq object
-OTU1 = as(otu_table(ps), "matrix")
+OTU1 = as(otu_table(ps_ITS), "matrix")
 # transpose if necessary
-if(taxa_are_rows(ps)){OTU1 <- t(OTU1)}
+if(taxa_are_rows(ps_ITS)){OTU1 <- t(OTU1)}
 # Coerce to data.frame
 OTUdf = as.data.frame(t(OTU1))
 ```
@@ -566,7 +593,7 @@ OTUdf = as.data.frame(t(OTU1))
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Running Lulu
 #read in match file from local blast
-matchlist <- read.csv(file="/Users/juliana/Documents/NBIS/Projects/6198/Working/Lulu/match_list.txt",sep="\t", header=FALSE, stringsAsFactors = FALSE) 
+matchlist <- read.csv(file="/Users/juliana/Documents/NBIS/Projects/6198/Working/Lulu/LULU_Pos_ITS/match_list.txt",sep="\t", header=FALSE, stringsAsFactors = FALSE) 
 str(matchlist)
 ```
 
@@ -579,13 +606,13 @@ curated_result$curated_table
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #save lulu results
 ASVtablelulu <- curated_result$curated_table
-write.csv(ASVtablelulu, "/Users/juliana/Documents/NBIS/Projects/6198/Working/Lulu/ASVs_table_lulu.csv")
+write.csv(ASVtablelulu, "/Users/juliana/Documents/NBIS/Projects/6198/Working/Lulu/LULU_Pos_ITS/ASVs_table_lulu.csv")
 
 ASVlulu_discards <- curated_result$discarded_otus
-write.csv(ASVlulu_discards, "/Users/juliana/Documents/NBIS/Projects/6198/Working/Lulu/filt_lulu_discards.csv")
+write.csv(ASVlulu_discards, "/Users/juliana/Documents/NBIS/Projects/6198/Working/Lulu/LULU_Pos_ITS/filt_lulu_discards.csv")
 
 ASVlulu_retained <- curated_result$curated_otus
-write.csv(ASVlulu_retained, "/Users/juliana/Documents/NBIS/Projects/6198/Working/Lulu/filt_lulu_retained.csv")
+write.csv(ASVlulu_retained, "/Users/juliana/Documents/NBIS/Projects/6198/Working/Lulu/LULU_Pos_ITS/filt_lulu_retained.csv")
 ```
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
@@ -601,23 +628,22 @@ curated_result$discarded_count
 badTaxa_v <- ASVlulu_discards
 #note: alternatively, could use the retained file to subset
 #prune original ps object by bad taxa and rename to new ps object
-ps
-allTaxa <- taxa_names(ps)
+ps_ITS
+allTaxa <- taxa_names(ps_ITS)
 allTaxa <- allTaxa[!(allTaxa %in% badTaxa_v)]
-ps_lulu <- prune_taxa(allTaxa, ps)
-ps_lulu
+ps_lulu2 <- prune_taxa(allTaxa, ps_ITS)
+ps_lulu2
 ```
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 # Compute prevalence of each feature, store as data.frame
-prevdf = apply(X = otu_table(ps_lulu),
-                 MARGIN = ifelse(taxa_are_rows(ps_lulu), yes = 1, no = 2),
+prevdf = apply(X = otu_table(ps_lulu2),
+                 MARGIN = ifelse(taxa_are_rows(ps_lulu2), yes = 1, no = 2),
                  FUN = function(x){sum(x > 0)})
 # Add taxonomy and total read counts to this data.frame
 prevdf = data.frame(Prevalence = prevdf,
-                      TotalAbundance = taxa_sums(ps_lulu),
-                      tax_table(ps_lulu))
-
+                      TotalAbundance = taxa_sums(ps_lulu2),
+                      tax_table(ps_lulu2))
 plyr::ddply(prevdf, "Phylum", function(df1){cbind(mean(df1$Prevalence),sum(df1$Prevalence))})
 
 ```
@@ -626,7 +652,7 @@ plyr::ddply(prevdf, "Phylum", function(df1){cbind(mean(df1$Prevalence),sum(df1$P
 # Define phyla to filter
 filterPhyla = c("p__Calcarisporiellomycota")
 # Filter entries with unidentified Phylum.
-ps1 = subset_taxa(ps_lulu, !Phylum %in% filterPhyla)
+ps1 = subset_taxa(ps_lulu2, !Phylum %in% filterPhyla)
 ps1
 
 ```
@@ -687,8 +713,9 @@ write_phyloseq(ps2, type = "OTU")
 ```
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#ps_new <- ps2: taxonomy fixed by hand
 pseq <- ps_new
-summarize_phyloseq(pseq)
+summarize_phyloseq(ps_new)
 ```
 
 ## Replicates Evaluation
@@ -870,6 +897,16 @@ ordplot2 +
 P_Plots <- subset_samples(pseq, Main_Analysis =="Yes")
 ```
 
+Rarefaction
+```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE, message=FALSE, warning=FALSE}
+psdata = rarefy_even_depth(P_Plots)
+plot(as(otu_table(psdata), 'vector'), as(otu_table(psdata), 'vector'))
+rarecurve(t(otu_table(psdata)), step=50, cex=0.5)
+rarecurve(t(otu_table(P_Plots)), step=50, cex=0.5)
+
+```
+
+
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Alpha Diversity
 alpha_diversity <- estimate_richness(P_Plots,  measures = c("Shannon", "Observed"))
@@ -949,7 +986,7 @@ ordplot2 +
 * Beta Diversity Plot - B.
 
 ```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
-ordplot3 <- (ordplot <- plot_ordination(expt, pcoa, "samples", color="Ecotype", shape = "Transect") + 
+ordplot3 <- (ordplot <- plot_ordination(expt, pcoa, "samples", color="Ecotype") + 
                geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.3) + 
                geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.3) +
                geom_point(size = 5, color = "grey") +
