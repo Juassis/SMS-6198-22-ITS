@@ -727,7 +727,8 @@ Comparison of alpha diversity in technical replicates samples on all Ecotypes fr
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Def Colors
 cols_Type <- c("A" = "#264D59", "B" = "#77A515")
-cols_Ecotype <- c("Meadow" = "#D46C4E", "Spruce-Alder" = "#77A515", "Spruce" = "#264D59", "Alder-zone" = "#43978D", "Pine" = "#d49c4e")
+cols_Ecotype <- c("Meadow" = "#D46C4E", "Spruce-Alder" = "#77A515", "Spruce" = "#264D59", "Alder" = "#43978D", "Pine" = "#d49c4e")
+cols_Ecotype2 <- c("I", "II", "III","IV","V")
 cols_Transect <- c("1" = "#264D59", "2" = "#77A515", "3" = "#D46C4E")
 ```
 
@@ -741,8 +742,9 @@ sample_data(pseq)$Reads_Sample <- reads_sample
 #
 alpha_diversity <- estimate_richness(pseq,  measures = c("Shannon", "Observed"))
 df <- data.frame(alpha_diversity, sample_data(pseq))
-df$Transect <- factor(df$Transect, levels = c(1,2,3), labels = c("A","B", "C"))
-df$Ecotype <- factor(df$Ecotype, levels = c("Meadow","Spruce-Alder", "Spruce","Alder zone","Pine"), labels = c("Meadow", "Spruce-Alder", "Spruce","Alder-zone","Pine"))
+df$Transect <- factor(df$Transect, levels = c(1,2,3), labels = c("1","2", "3")) #Keep 1,2,3
+df$Ecotype <- factor(df$Ecotype, levels = c("Meadow","Alder zone","Spruce-Alder", "Spruce","Pine"), labels = c("Meadow","Alder","Spruce-Alder", "Spruce","Pine"))
+#df$Ecotype <- factor(df$Ecotype, levels = c("Meadow","Alder zone","Spruce-Alder", "Spruce","Pine"), labels = c("I", "II", "III","IV","V"))
 ```
 
 ```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
@@ -833,23 +835,23 @@ distance_matrix_melt_filt<-subset(distance_matrix_melt, Comparision %in% compAll
 row.names(distance_matrix_melt_filt)<-as.character(distance_matrix_melt_filt$variable)
 distance_matrix_melt_filt_info<-merge(distance_matrix_melt_filt, samdf, by=0)
 #Factor
-distance_matrix_melt_filt_info$Transect <- factor(distance_matrix_melt_filt_info$Transect, levels = c(1,2,3), labels = c("A","B", "C"))
-distance_matrix_melt_filt_info$Ecotype <- factor(distance_matrix_melt_filt_info$Ecotype, levels = c("Meadow","Spruce-Alder", "Spruce","Alder zone","Pine"), labels = c("Meadow", "Spruce-Alder", "Spruce","Alder-zone","Pine"))
+distance_matrix_melt_filt_info$Transect <- factor(distance_matrix_melt_filt_info$Transect, levels = c(1,2,3), labels = c("1","2", "3"))
+distance_matrix_melt_filt_info$Ecotype <- factor(distance_matrix_melt_filt_info$Ecotype, levels = c("Meadow","Alder zone","Spruce-Alder", "Spruce","Pine"), labels = c("Meadow","Alder","Spruce-Alder", "Spruce","Pine"))
 #
 sup2 <- ggplot(distance_matrix_melt_filt_info, aes(Ecotype, value, shape = Type)) +
-  geom_jitter(shape=16, size = 6, position=position_jitter(0.2), color = "black", alpha = 0.7) +
+  geom_jitter(shape=16, size = 5, position=position_jitter(0.2), color = "black", alpha = 0.7) +
   geom_text_repel(aes(label = User_ID), nudge_x = 0.02, size = 4.0, segment.alpha = 0.5) +
   theme_pubr(border = TRUE) +
   facet_grid(~Transect) +
-  theme(axis.text=element_text(size=14), 
+  theme(axis.text=element_text(size=12), 
         axis.text.x = element_text(size = 12, hjust = 0.5), 
-        axis.title.y = element_text(size = 18, hjust = 0.5),
-        legend.text=element_text(size=14), 
+        axis.title.y = element_text(size = 12, hjust = 0.5),
+        legend.text=element_text(size=12), 
         legend.title=element_text(size=0),
         legend.position="none",
-        axis.title.x = element_text(size = 18), 
-        strip.text.x = element_text(size = 20, face = "bold"),
-        strip.text.y = element_text(size = 20, face = "bold")) +
+        axis.title.x = element_text(size = 12), 
+        strip.text.x = element_text(size = 12, face = "bold"),
+        strip.text.y = element_text(size = 12, face = "bold")) +
   labs(x="Ecotype", y = "Jensen-Shannon Distance (JSD)") +
   ylim(0, 1) 
 print(sup2)
@@ -859,14 +861,18 @@ print(sup2)
 ```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
 ##PCOA
 ##Relative Abundance
+
+#Remove zeros
+#ps4 = filter_taxa(pseq, function(x) sum(x > 10) > (0.8*length(x)), TRUE)
+
 Plots <- transform_sample_counts(pseq, function(otu) otu/sum(otu))
 #
-expt = prune_taxa(names(sort(taxa_sums(Plots), TRUE)[1:4000]), Plots)
+expt = prune_taxa(names(sort(taxa_sums(Plots), TRUE)[1:1000]), Plots)
 ord<- sqrt(phyloseq::distance(Plots,Type = "samples", "jsd"))
 pcoa=ordinate(Plots, "PCoA", distance=ord)
 #
-expt@sam_data$Transect <- factor(expt@sam_data$Transect, levels = c(1,2,3), labels = c("A","B", "C"))
-expt@sam_data$Ecotype <- factor(expt@sam_data$Ecotype, levels = c("Meadow","Spruce-Alder", "Spruce","Alder zone","Pine"), labels = c("Meadow", "Spruce-Alder", "Spruce","Alder-zone","Pine"))
+expt@sam_data$Transect <- factor(expt@sam_data$Transect, levels = c(1,2,3), labels = c("1","2", "3"))
+expt@sam_data$Ecotype <- factor(expt@sam_data$Ecotype, levels = c("Meadow","Alder zone","Spruce-Alder", "Spruce","Pine"), labels = c("Meadow","Alder","Spruce-Alder", "Spruce","Pine"))
 ord_DataFrame <- plot_ordination(expt, pcoa, "samples", justDF ="TRUE")
 #
 ordplot2 <- (ordplot <- plot_ordination(expt, pcoa, "samples", color="Ecotype", shape = "Transect") + 
@@ -892,6 +898,7 @@ ordplot2 +
   geom_point(data=ord_DataFrame, aes(x = Axis.1, y = Axis.2, fill =Ecotype, size = 4))  +
   scale_fill_manual(values = cols_Ecotype) 
 ```
+
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Removing replicates 
 P_Plots <- subset_samples(pseq, Main_Analysis =="Yes")
@@ -907,17 +914,25 @@ rarecurve(t(otu_table(P_Plots)), step=50, cex=0.5)
 ```
 
 
-```{r,echo=FALSE,include=FALSE, eval = FALSE}
-#Alpha Diversity
-alpha_diversity <- estimate_richness(P_Plots,  measures = c("Shannon", "Observed"))
-df <- data.frame(alpha_diversity, sample_data(P_Plots))
-df$Transect <- factor(df$Transect, levels = c(1,2,3), labels = c("A","B", "C"))
-df$Ecotype <- factor(df$Ecotype, levels = c("Meadow","Spruce-Alder", "Spruce","Alder zone","Pine"), labels = c("Meadow", "Spruce-Alder", "Spruce","Alder-zone","Pine"))
-```
-
 ## Main Analysis
 
 * Alpha Diversity Plot - A.
+
+
+```{r,echo=FALSE,include=FALSE}
+#Alpha Diversity
+P_Plots
+reads_sample <- readcount(P_Plots)
+# check for first 5 samples
+reads_sample[1:5]
+sample_data(P_Plots)$Reads_Sample <- reads_sample
+#
+alpha_diversityb <- estimate_richness(P_Plots,  measures = c("Shannon", "Observed"))
+df2 <- data.frame(alpha_diversityb, sample_data(P_Plots))
+df2$Transect <- factor(df2$Transect, levels = c(1,2,3), labels = c("1","2", "3")) #Keep 1,2,3
+df2$Ecotype <- factor(df2$Ecotype, levels = c("Meadow","Alder zone","Spruce-Alder", "Spruce","Pine"), labels = c("Meadow","Alder","Spruce-Alder", "Spruce","Pine"))
+
+```
 
 ```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
 ##Plot measures
@@ -930,7 +945,7 @@ scales <- list(
 
 ##
 options(ggrepel.max.overlaps = Inf)
-p <- df %>% 
+p <- df2 %>% 
   gather(key = metric, value = value, c("Observed", "Shannon")) %>%
   mutate(metric = factor(metric, levels = c("Observed", "Shannon"))) %>%
   ggplot(aes(x = Ecotype, y = value, color = Ecotype)) + #,shape = Type
@@ -951,14 +966,18 @@ p +
 
 ```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
 ##Relative Abundance
+ps4 = filter_taxa(pseq, function(x) sum(x > 10) > (0.5*length(x)), TRUE)
+
+#Plots <- transform_sample_counts(pseq, function(otu) otu/sum(otu))
+
 Plots <- transform_sample_counts(P_Plots, function(otu) otu/sum(otu))
 #
-expt = prune_taxa(names(sort(taxa_sums(Plots), TRUE)[1:4000]), Plots)
+expt = prune_taxa(names(sort(taxa_sums(Plots), TRUE)[1:1000]), Plots)
 ord<- sqrt(phyloseq::distance(Plots,Type = "samples", "jsd"))
 pcoa=ordinate(Plots, "PCoA", distance=ord)
 #
-expt@sam_data$Transect <- factor(expt@sam_data$Transect, levels = c(1,2,3), labels = c("A","B", "C"))
-expt@sam_data$Ecotype <- factor(expt@sam_data$Ecotype, levels = c("Meadow","Spruce-Alder", "Spruce","Alder zone","Pine"), labels = c("Meadow", "Spruce-Alder", "Spruce","Alder-zone","Pine"))
+expt@sam_data$Transect <- factor(expt@sam_data$Transect, levels = c(1,2,3), labels = c("1","2", "3"))
+expt@sam_data$Ecotype <- factor(expt@sam_data$Ecotype, levels = c("Meadow","Alder zone","Spruce-Alder", "Spruce","Pine"), labels = c("Meadow","Alder","Spruce-Alder", "Spruce","Pine"))
 ord_DataFrame <- plot_ordination(expt, pcoa, "samples", justDF ="TRUE")
 ordplot2 <- (ordplot <- plot_ordination(expt, pcoa, "samples", color="Ecotype", shape = "Transect") + 
                geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.3) + 
@@ -976,7 +995,7 @@ ordplot2 <- (ordplot <- plot_ordination(expt, pcoa, "samples", color="Ecotype", 
                      axis.title.x = element_text(size = 18), 
                      strip.text.x = element_text(size = 20, face = "bold"))) +
   scale_color_manual(values = cols_Ecotype)+
-  labs(x="PCo1 [13.3%]", y = "PCo2 [9.4%]", element_text(face = "bold"))
+  labs(x="PCo1 [13.3%]", y = "PCo2 [9.3%]", element_text(face = "bold"))
 ordplot2$layers <- ordplot2$layers[-1]
 ordplot2 + 
   geom_point(data=ord_DataFrame, aes(x = Axis.1, y = Axis.2, fill =Ecotype, size = 4))  +
@@ -1002,7 +1021,7 @@ ordplot3 <- (ordplot <- plot_ordination(expt, pcoa, "samples", color="Ecotype") 
                      axis.title.x = element_text(size = 18), 
                      strip.text.x = element_text(size = 20, face = "bold"))) +
   scale_color_manual(values = cols_Ecotype)+
-  labs(x="PCo1 [13.3%]", y = "PCo2 [9.4%]", element_text(face = "bold")) +
+  labs(x="PCo1 [13.3%]", y = "PCo2 [9.3%]", element_text(face = "bold")) +
   facet_grid(~Transect)
 ordplot3$layers <- ordplot3$layers[-1]
 ordplot3 + 
@@ -1024,9 +1043,9 @@ permanova
 #PlotBar
 phylo.relative <- transform_sample_counts(P_Plots, function(otu) otu/sum(otu))
 #Subset
-top <- names(sort(taxa_sums(phylo.relative), decreasing=TRUE))[1:100]
-sample_data(phylo.relative)$Transect <- factor(sample_data(phylo.relative)$Transect, levels = c(1,2,3), labels = c("A","B", "C"))
-sample_data(phylo.relative)$Ecotype <- factor(sample_data(phylo.relative)$Ecotype, levels = c("Meadow","Spruce-Alder", "Spruce","Alder zone","Pine"), labels = c("Meadow", "Spruce-Alder", "Spruce","Alder-zone","Pine"))
+top <- names(sort(taxa_sums(phylo.relative), decreasing=TRUE))[1:50]
+sample_data(phylo.relative)$Transect <- factor(sample_data(phylo.relative)$Transect, levels = c(1,2,3), labels = c("1","2", "3"))
+sample_data(phylo.relative)$Ecotype <- factor(sample_data(phylo.relative)$Ecotype, levels = c("Meadow","Alder zone","Spruce-Alder", "Spruce","Pine"), labels = c("Meadow","Alder","Spruce-Alder", "Spruce","Pine"))
 #
 ps.top <- prune_taxa(top, phylo.relative)
 meta <- data.frame(meta(ps.top))
@@ -1045,24 +1064,24 @@ Batch1_taxa_all_metadata2 =  merge(batch1_media_melt, meta, by.x = "sample", by.
 Batch1_taxa_all_metadata2 = Batch1_taxa_all_metadata2[!Batch1_taxa_all_metadata2$Genus =="Unknown",]
 #
 list_ <- data.frame(Batch1_taxa_all_metadata2 %>%
-                      dplyr::group_by(taxa_name) %>%
+                      dplyr::group_by(Genus) %>%
                       dplyr::summarise(RA_count = sum(as.numeric(RA))) %>%
                       dplyr::arrange(desc(RA_count)))
-list_sp <- list_$taxa_name
+list_sp <- list_$Genus
 #
-Batch1_taxa_all_metadata2$Species <- factor(Batch1_taxa_all_metadata2$Species, levels = list_sp)
-Batch1_taxa_all_metadata2$taxa_name <- factor(Batch1_taxa_all_metadata2$taxa_name, levels = list_sp)
-Batch1_taxa_all_metadata2$Phylum <- factor(Batch1_taxa_all_metadata2$Phylum, levels = list_sp)
-Batch1_taxa_all_metadata2$Family <- factor(Batch1_taxa_all_metadata2$Family, levels = list_sp)
+#Batch1_taxa_all_metadata2$Species <- factor(Batch1_taxa_all_metadata2$Species, levels = list_sp)
+#Batch1_taxa_all_metadata2$taxa_name <- factor(Batch1_taxa_all_metadata2$taxa_name, levels = list_sp)
+#Batch1_taxa_all_metadata2$Phylum <- factor(Batch1_taxa_all_metadata2$Phylum, levels = list_sp)
+#Batch1_taxa_all_metadata2$Family <- factor(Batch1_taxa_all_metadata2$Family, levels = list_sp)
 Batch1_taxa_all_metadata2$Genus <- factor(Batch1_taxa_all_metadata2$Genus, levels = list_sp)
 ##Changing the color
 getPalette = colorRampPalette(brewer.pal(9, "Set1"))
-speciesList = unique(tax_table(ps.top)[,"taxa_name"])
+speciesList = unique(tax_table(ps.top)[,"Genus"])
 speciesPalette = getPalette(length(speciesList))
 names(speciesPalette) = speciesList
 #Change for Species, Genus
-ggplot(data=Batch1_taxa_all_metadata2, aes(x=Ecotype, group = taxa_name)) +
-  geom_bar(aes(y=RA, fill = taxa_name),stat="identity", alpha=.7) + 
+ggplot(data=Batch1_taxa_all_metadata2, aes(x=Ecotype, group = Genus)) +
+  geom_bar(aes(y=RA, fill = Genus),stat="identity", alpha=.7) + 
   theme_pubr(border = TRUE) +
   theme(axis.text.x = element_text(size = 14, hjust = 0.5), 
         axis.text.y = element_text(size = 14, hjust = 1),
