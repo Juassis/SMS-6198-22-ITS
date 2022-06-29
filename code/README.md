@@ -1,7 +1,8 @@
 # Code
 
-This is the `code` directory, in which you can put scripts or snippets of code
-that is not included in *e.g.* pipelines or reports.
+RMD all codes in R
+html Report
+pdf Report
 
 [*(back to project home directory)*][sf-home]
 
