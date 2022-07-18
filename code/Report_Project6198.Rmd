@@ -233,10 +233,11 @@ filtRs = file.path(filt_path, paste0(sample.names, "_R_filt.fastq"))
 #dev.off()
 ```
 
-```{r,echo=FALSE,include=FALSE, eval = FALSE}
+```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE}
+
 #Filter Sequences
-plotQualityProfile(fnFs[1:6]) #96
-plotQualityProfile(fnRs[1:6]) #96
+plotQualityProfile(fnFs[1:12]) #96
+plotQualityProfile(fnRs[1:12]) #96
 ```
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Defining Primers
@@ -327,12 +328,12 @@ cutFs = file.path(path.cut, cutFs)
 cutRs = file.path(path.cut, cutRs)
 ```
 
-```{r,echo=FALSE,include=FALSE, eval = FALSE}
+```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE}
 #Inspect read quality profiles
 plotQualityProfile(cutFs[1:2])
 ```
 
-```{r,echo=FALSE,include=FALSE, eval = FALSE}
+```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE}
 plotQualityProfile(cutRs[1:2])
 ```
 
@@ -364,8 +365,12 @@ filtRs = file.path(filt_path, paste0(sample.names, "_R2.fastq.gz"))
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 table(file.exists(filtFs)) 
 table(file.exists(filtRs))
-plotQualityProfile(filtFs[1:6])
-plotQualityProfile(filtFs[1:6])
+
+```
+
+```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE}
+plotQualityProfile(filtFs[1:12])
+plotQualityProfile(filtFs[1:12])
 ```
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
@@ -373,7 +378,7 @@ errF <- learnErrors(filtFs, multithread = TRUE)
 errR <- learnErrors(filtRs, multithread = TRUE)
 ```
 
-```{r,echo=FALSE,include=FALSE, eval = FALSE}
+```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE}
 #Plot Error Rate
 plotErrors(errF, nominalQ = TRUE)
 plotErrors(errR, nominalQ = TRUE)
@@ -657,7 +662,7 @@ ps1
 
 ```
 
-```{r,echo=FALSE,include=FALSE, eval = FALSE}
+```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE}
 # Subset to the remaining phyla
 prevdf1 = subset(prevdf, Phylum %in% get_taxa_unique(ps1, "Phylum"))
 ggplot(prevdf1, aes(TotalAbundance, Prevalence / nsamples(ps0),color=Phylum)) +
@@ -927,7 +932,8 @@ reads_sample <- readcount(P_Plots)
 reads_sample[1:5]
 sample_data(P_Plots)$Reads_Sample <- reads_sample
 #
-alpha_diversityb <- estimate_richness(P_Plots,  measures = c("Shannon", "Observed"))
+#alpha_diversityb <- estimate_richness(P_Plots,  measures = c("Shannon", "Observed"))
+alpha_diversityb <- estimate_richness(P_Plots,  measures = c("Observed", "Chao1", "ACE", "Shannon", "Simpson", "InvSimpson", "Fisher"))
 df2 <- data.frame(alpha_diversityb, sample_data(P_Plots))
 df2$Transect <- factor(df2$Transect, levels = c(1,2,3), labels = c("1","2", "3")) #Keep 1,2,3
 df2$Ecotype <- factor(df2$Ecotype, levels = c("Meadow","Alder zone","Spruce-Alder", "Spruce","Pine"), labels = c("Meadow","Alder","Spruce-Alder", "Spruce","Pine"))
@@ -936,6 +942,9 @@ df2$Ecotype <- factor(df2$Ecotype, levels = c("Meadow","Alder zone","Spruce-Alde
 
 ```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
 ##Plot measures
+PY <- levels(df2$Ecotype) # get the variables
+PY.pairs <- combn(seq_along(PY), 2, simplify = FALSE, FUN = function(i)PY[i])
+
 dose.labs <- c("Richness", "Shannon")
 names(dose.labs) <- c("Observed", "Shannon")
 #Scale
@@ -946,8 +955,12 @@ scales <- list(
 ##
 options(ggrepel.max.overlaps = Inf)
 p <- df2 %>% 
-  gather(key = metric, value = value, c("Observed", "Shannon")) %>%
-  mutate(metric = factor(metric, levels = c("Observed", "Shannon"))) %>%
+  #gather(key = metric, value = value, c("Observed", "Shannon")) %>%
+    gather(key = metric, value = value, c("Observed", "Chao1", "ACE", "Shannon", "Simpson", "InvSimpson", "Fisher")) %>%
+
+  #mutate(metric = factor(metric, levels = c("Observed", "Shannon"))) %>%
+    mutate(metric = factor(metric, levels = c("Observed", "Chao1", "ACE", "Shannon", "Simpson", "InvSimpson", "Fisher"))) %>%
+
   ggplot(aes(x = Ecotype, y = value, color = Ecotype)) + #,shape = Type
   geom_point(size = 5, color = "grey") +
   labs(x = "", y = "") +
@@ -962,15 +975,107 @@ p +
   scale_fill_manual(values = cols_Ecotype) 
 #Rplot_AlphaDiversity_MainAnalysis
 ```
+```{r}
+#plot by mean
+#tt <- aggregate(df2$Observed, list(df2$Transect, df2$Ecotype), FUN=mean)
+
+
+
+H <- df2$Shannon
+S1 <- df2$Observed
+S <- log(S1)
+evenness <- H/S
+
+Shannon <- aggregate(df2$Shannon, list(df2$Transect, df2$Ecotype), FUN=mean)
+
+Chao1 <- aggregate(df2$Chao1, list(df2$Transect, df2$Ecotype), FUN=mean)
+
+se.chao1 <- aggregate(df2$se.chao1, list(df2$Transect, df2$Ecotype), FUN=mean)
+
+ACE <- aggregate(df2$ACE, list(df2$Transect, df2$Ecotype), FUN=mean)
+
+se.ACE <- aggregate(df2$se.ACE, list(df2$Transect, df2$Ecotype), FUN=mean)
+
+Simpson <- aggregate(df2$Simpson, list(df2$Transect, df2$Ecotype), FUN=mean)
+
+InvSimpson <- aggregate(df2$InvSimpson, list(df2$Transect, df2$Ecotype), FUN=mean)
+
+Fisher <- aggregate(df2$Fisher, list(df2$Transect, df2$Ecotype), FUN=mean)
+
+Observed <- aggregate(df2$Observed, list(df2$Transect, df2$Ecotype), FUN=mean)
+
+tt <- df2 %>% 
+  group_by(Transect,Ecotype) %>% 
+  summarise (Observed = mean(Observed))
+
+tt2 <- df2 %>% 
+  group_by(Transect,Ecotype) %>% 
+  summarise (Shannon = mean(Shannon))
+
+#write.table(df2, "/Users/juliana/Documents/GitHub/SMS-6198-22-ITS/results/DF_Main_Data.tsv", sep='\t', row.names=FALSE, quote=FALSE)
+```
+
+```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
+PY <- levels(tt$Ecotype) # get the variables
+PY.pairs <- combn(seq_along(PY), 2, simplify = FALSE, FUN = function(i)PY[i])
+
+##
+options(ggrepel.max.overlaps = Inf)
+p4 <- tt %>% 
+  ggplot(aes(x = Ecotype, y = Observed, color = Ecotype)) + #,shape = Type
+  geom_point(size = 5, color = "grey") +
+  labs(x = "", y = "") +
+  theme_pubr(border = TRUE) +
+  scale_colour_manual(values = cols_Ecotype) +
+  theme(legend.position="top") +
+  theme(legend.title = element_blank()) +
+  facet_nested(~Transect) +
+  stat_compare_means( method='wilcox.test', p.adjust.method = "BH", label = "p.signif", comparisons = PY.pairs, size = 2) 
+
+p4 + 
+  geom_point(data=p4$data, aes(x = Ecotype, y = Observed, fill =Ecotype, size = 4))  +
+  scale_fill_manual(values = cols_Ecotype) 
+```
+
+
+```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
+PY2 <- levels(tt$Ecotype) # get the variables
+PY2.pairs <- combn(seq_along(PY2), 2, simplify = FALSE, FUN = function(i)PY2[i])
+
+##
+options(ggrepel.max.overlaps = Inf)
+p5 <- tt %>% 
+  ggplot(aes(x = Ecotype, y = Observed, color = Transect)) + #,shape = Type
+  geom_point(size = 5, color = "grey") +
+  labs(x = "", y = "") +
+  theme_pubr(border = TRUE) +
+  scale_colour_manual(values = cols_Transect) +
+  theme(legend.position="top") +
+  theme(legend.title = element_blank()) +
+  stat_compare_means( method='anova', label = "p.signif", comparisons = PY2.pairs, size = 2) 
+
+  #stat_compare_means( method='wilcox.test', p.adjust.method = "BH", label = "p.signif", comparisons = PY2.pairs, size = 2) 
+
+p5 + 
+  geom_point(data=p5$data, aes(x = Ecotype, y = Observed, fill =Transect, size = 4))  +
+  scale_fill_manual(values = cols_Transect) 
+```
+
+
+```{r}
+gpca  <- ordinate(Plots, "CCA")
+# Scree plot
+plot_scree(gpca, "Scree Plot for Global Patterns Correspondence Analysis")
+```
+
 * Beta Diversity Plot - A.
 
 ```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
 ##Relative Abundance
-ps4 = filter_taxa(pseq, function(x) sum(x > 10) > (0.5*length(x)), TRUE)
-
+GP = filter_taxa(P_Plots, function(x) sum(x > 3) > (0.2*length(x)), TRUE)
 #Plots <- transform_sample_counts(pseq, function(otu) otu/sum(otu))
 
-Plots <- transform_sample_counts(P_Plots, function(otu) otu/sum(otu))
+Plots <- transform_sample_counts(GP, function(otu) otu/sum(otu))
 #
 expt = prune_taxa(names(sort(taxa_sums(Plots), TRUE)[1:1000]), Plots)
 ord<- sqrt(phyloseq::distance(Plots,Type = "samples", "jsd"))
@@ -994,7 +1099,7 @@ ordplot2 <- (ordplot <- plot_ordination(expt, pcoa, "samples", color="Ecotype", 
                      legend.position="bottom",
                      axis.title.x = element_text(size = 18), 
                      strip.text.x = element_text(size = 20, face = "bold"))) +
-  scale_color_manual(values = cols_Ecotype)+
+  scale_color_manual(values = cols_Ecotype)#+
   labs(x="PCo1 [13.3%]", y = "PCo2 [9.3%]", element_text(face = "bold"))
 ordplot2$layers <- ordplot2$layers[-1]
 ordplot2 + 
@@ -1002,6 +1107,129 @@ ordplot2 +
   scale_fill_manual(values = cols_Ecotype) 
 #Rplot_BetaDiversity_MainAnalysis
 ```
+
+
+```{r}
+#Vegam NMDS
+# Set working directory
+# Read in species matrix AND grouping variables
+#Filter Data = zeros GP
+island.spp <- data.frame(GP@otu_table)
+island.spp_groups <-  data.frame(GP@sam_data)
+  # This is our grouping data
+
+# Calculating relative abundance and creating new dataframe with relative abundance data
+island.spp.rel <-         
+  decostand(island.spp, method = "total")
+
+# Calculate distance matrix
+island.spp_distmat <- 
+  vegdist(island.spp.rel, method = "bray")
+
+# Creating easy to view matrix and writing .csv
+island.spp_distmat <- 
+  as.matrix(island.spp_distmat, labels = T)
+#write.csv(island.spp_distmat, "island_spp_distmat.csv")
+
+
+island.spp_NMS <-
+  metaMDS(island.spp_distmat,
+          distance = "bray",
+          k = 3,
+          maxit = 999, 
+          trymax = 500,
+          wascores = TRUE)
+
+
+# Shepards test/goodness of fit
+goodness(island.spp_NMS) # Produces a results of test statistics for goodness of fit for each point
+
+stressplot(island.spp_NMS) # Produces a Shepards diagram
+```
+
+```{r}
+# Plotting points in ordination space
+plot(island.spp_NMS, "sites")   # Produces distance 
+orditorp(island.spp_NMS, "sites")   # Gives points labels
+```
+
+
+
+```{r}
+#https://rpubs.com/CPEL/NMDS
+plot(island.spp_NMS)
+with(island.spp_groups,
+     points(island.spp_NMS,
+            display = "sites",
+            color="Ecotype",
+            #col = island.spp_groups$Ecotype,
+            pch = cols_Ecotype[Ecotype],
+            bg = cols_Transect[Transect]))
+```
+
+```{r}
+
+GP1 = transform_sample_counts(GP, function(x) 1E6 * x/sum(x))
+GP.ord <- ordinate(GP1, "NMDS", "bray")
+p1 = plot_ordination(GP1, GP.ord, type="taxa", color="Phylum", title="taxa")
+print(p1)
+p1 + facet_wrap(~Phylum, 3)
+
+GP1@sam_data$Transect <- factor(GP1@sam_data$Transect, levels = c(1,2,3), labels = c("1","2", "3"))
+
+p2 = plot_ordination(GP1, GP.ord, type="samples", color="Ecotype", shape="Transect") 
+p2 + geom_polygon(aes(fill=Ecotype)) + geom_point(size=5) + ggtitle("samples") +   
+  scale_fill_manual(values = cols_Ecotype) +
+  scale_color_manual(values = cols_Ecotype)
+
+####
+p3 = plot_ordination(GP1, GP.ord, type="biplot", color="Ecotype", shape="Phylum", title="biplot")
+# Some stuff to modify the automatic shape scale
+GP1.shape.names = get_taxa_unique(GP1, "Phylum")
+GP1.shape <- 15:(15 + length(GP1.shape.names) - 1)
+names(GP1.shape) <- GP1.shape.names
+GP1.shape["samples"] <- 16
+p3 + scale_shape_manual(values=GP1.shape)
+
+
+p9 = plot_ordination(GP1, GP.ord, type="split", color="Ecotype", shape="Transect", title="split") 
+p9
+
+#####
+
+dist = "bray"
+#ord_meths = c("DCA", "CCA", "RDA", "DPCoA", "NMDS", "MDS", "PCoA")
+ord_meths = c("CCA",  "NMDS", "MDS", "PCoA")
+
+plist = llply(as.list(ord_meths), function(i, physeq, dist){
+        ordi = ordinate(physeq, method=i, distance=dist)
+        plot_ordination(physeq, ordi, "samples", color="Ecotype")
+}, GP1, dist)
+
+names(plist) <- ord_meths
+
+pdataframe = ldply(plist, function(x){
+    df = x$data[, 1:2]
+    colnames(df) = c("Axis_1", "Axis_2")
+    return(cbind(df, x$data))
+})
+names(pdataframe)[1] = "method"
+
+
+p = ggplot(pdataframe, aes(Axis_1, Axis_2, color=Ecotype, shape=Transect, fill=Ecotype))
+p = p + geom_point(size=4) + geom_polygon()
+p = p + facet_wrap(~method, scales="free")
+p = p + scale_fill_brewer(type="qual", palette="Set1")
+p = p + scale_colour_brewer(type="qual", palette="Set1")
+p
+
+plist[[2]]
+#NMDS elipse
+#####
+
+```
+
+
 * Beta Diversity Plot - B.
 
 ```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
@@ -1043,7 +1271,7 @@ permanova
 #PlotBar
 phylo.relative <- transform_sample_counts(P_Plots, function(otu) otu/sum(otu))
 #Subset
-top <- names(sort(taxa_sums(phylo.relative), decreasing=TRUE))[1:50]
+top <- names(sort(taxa_sums(phylo.relative), decreasing=TRUE))[1:20]
 sample_data(phylo.relative)$Transect <- factor(sample_data(phylo.relative)$Transect, levels = c(1,2,3), labels = c("1","2", "3"))
 sample_data(phylo.relative)$Ecotype <- factor(sample_data(phylo.relative)$Ecotype, levels = c("Meadow","Alder zone","Spruce-Alder", "Spruce","Pine"), labels = c("Meadow","Alder","Spruce-Alder", "Spruce","Pine"))
 #
@@ -1075,7 +1303,8 @@ list_sp <- list_$Genus
 #Batch1_taxa_all_metadata2$Family <- factor(Batch1_taxa_all_metadata2$Family, levels = list_sp)
 Batch1_taxa_all_metadata2$Genus <- factor(Batch1_taxa_all_metadata2$Genus, levels = list_sp)
 ##Changing the color
-getPalette = colorRampPalette(brewer.pal(9, "Set1"))
+
+getPalette = colorRampPalette(brewer.pal(8, "Dark2"))
 speciesList = unique(tax_table(ps.top)[,"Genus"])
 speciesPalette = getPalette(length(speciesList))
 names(speciesPalette) = speciesList
@@ -1090,9 +1319,25 @@ ggplot(data=Batch1_taxa_all_metadata2, aes(x=Ecotype, group = Genus)) +
         legend.position = "bottom") +
   scale_fill_manual(values= speciesPalette) +
   facet_grid(~Transect, scales = "free", space = "free")
+
+
+
+ggplot(data=Batch1_taxa_all_metadata2, aes(x=Ecotype, group = Genus)) +
+  geom_bar(aes(y=RA, fill = Genus),stat="identity", alpha=.7) + 
+  theme_pubr(border = TRUE) +
+  theme(axis.text.x = element_text(size = 14, hjust = 0.5), 
+        axis.text.y = element_text(size = 14, hjust = 1),
+        axis.title.x.bottom = element_text(size = 18),
+        axis.title.y = element_text(size = 18),
+        legend.position = "bottom") +
+  scale_fill_manual(values= speciesPalette) +
+  facet(~Transect)
 #Rplot_PlotBar_ASVs
 ```
 
+```{r}
+#Heatmap with Deseq2
+```
 
 
 
