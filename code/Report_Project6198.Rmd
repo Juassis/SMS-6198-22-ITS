@@ -20,7 +20,6 @@ output:
     #css: "assets/report.css"
   pdf_document: default
 ---
-
 <!-- ----------------------- Do not edit above this ----------------------- -->
 
 ```{r,echo=FALSE,include=FALSE}
@@ -234,17 +233,41 @@ filtRs = file.path(filt_path, paste0(sample.names, "_R_filt.fastq"))
 #dev.off()
 ```
 
-```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE}
+**Inspect read quality profiles**
+Quality profiles of the forward reads:
+
+
+```{r pca, fig.cap="PCA plot of the first 2 principal components. Calculated using the 500 most variable genes.", fig.width=12, fig.height=6, message=FALSE, warning=FALSE, fig.path='PCA/', dev=c('png', 'pdf')}
+```
+
+```{r,fig.cap="QC Foward Reads.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, fig.path='PLOTS/', dev=c('png', 'pdf')}
+#Filter Sequences
+a <- plotQualityProfile(fnFs[1:6]) #96
+a
+ggsave("./PLOTS/1-fnfQC.pdf", a)
+```
+
+In gray-scale is a heat map of the frequency of each quality score at each base position. The median quality score at each position is shown by the green line, and the quartiles of the quality score distribution by the orange lines. The red line shows the scaled proportion of reads that extend to at least that position 
+
+The forward reads are good quality
+I truncated the forward reads at position 240.
+
+Quality profile of the reverse reads:
+```{r,fig.cap="QC Reverse Reads.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, fig.path='PLOTS/', dev=c('png', 'pdf')}
 
 #Filter Sequences
-plotQualityProfile(fnFs[1:12]) #96
-plotQualityProfile(fnRs[1:12]) #96
+b <- plotQualityProfile(fnRs[1:6]) #96
+b
+ggsave("./PLOTS/2-fnRQC.pdf", b)
+
 ```
-```{r,echo=FALSE,include=FALSE, eval = FALSE}
+The reverse reads are of significantly worse quality, especially at the end, which is common in Illumina sequencing. This isn’t too worrisome, as DADA2 incorporates quality information into its error model which makes the algorithm robust to lower quality sequence, but trimming as the average qualities crash will improve the algorithm’s sensitivity to rare sequence variants. Based on these profiles, I truncated the reverse reads at position 200 where the quality distribution crashes.
+
+**Identify primers**
+```{r,echo=FALSE, eval = FALSE}
 #Defining Primers
 FWD <- "CTTGGTCATTTAGAGGAAGTAA"
-REV <- "GCTGCGTTCTTCATCGATGC"  #small
-#REV <- "TCCTCCGCTTATTGATATGC" #large
+REV <- "GCTGCGTTCTTCATCGATGC"
 ```
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
@@ -309,13 +332,17 @@ for(i in seq_along(fnFs)) {
 }
 ```
 
-```{r,echo=FALSE,include=FALSE, eval = FALSE}
+**sanity check of primers and adapters**
+```{r,echo=FALSE, eval = FALSE}
 #sanity check
 rbind(FWD.ForwardReads = sapply(FWD.orients, primerHits, fn = fnFs.cut[[1]]), 
     FWD.ReverseReads = sapply(FWD.orients, primerHits, fn = fnRs.cut[[1]]), 
     REV.ForwardReads = sapply(REV.orients, primerHits, fn = fnFs.cut[[1]]), 
     REV.ReverseReads = sapply(REV.orients, primerHits, fn = fnRs.cut[[1]]))
 ```
+Success! Primers are no longer detected in the cutadapted reads.
+
+The primer-free sequence files are now ready to be analyzed through the DADA2 pipeline. Similar to the earlier steps of reading in FASTQ files, we read in the names of the cutadapt-ed FASTQ files and applying some string manipulation to get the matched lists of forward and reverse fastq files.
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Data working 
