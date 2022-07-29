@@ -1567,7 +1567,7 @@ Batch1_taxa_all_metadata2$Relative_Abundance <- log10(as.numeric(Batch1_taxa_all
 
 
 RelativeAbundance <-  ggplot(data=Batch1_taxa_all_metadata2, aes(x=Ecotype, group = Genus)) +
-  geom_bar(aes(y=Relative_Abundance, fill = Genus),stat="identity", alpha=.7) + 
+  geom_bar(aes(y=Relative_Abundance, fill = Genus),stat="identity") + #colour="#f8edeb" , alpha=.7
   theme_pubr(border = TRUE) +
   theme(axis.text.x = element_text(size = 14, hjust = 0.5), 
         axis.text.y = element_text(size = 14, hjust = 1),
@@ -1575,7 +1575,7 @@ RelativeAbundance <-  ggplot(data=Batch1_taxa_all_metadata2, aes(x=Ecotype, grou
         axis.title.y = element_text(size = 18),
         legend.position = "bottom") +
   scale_fill_manual(values= speciesPalette) +
-  facet_wrap(~Transect, ncol = 1, scales = "free")
+  facet_wrap(~Transect, ncol = 1, scales = "free", strip.position="right")
 
 RelativeAbundance
 ```
