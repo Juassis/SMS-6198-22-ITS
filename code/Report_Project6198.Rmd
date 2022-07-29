@@ -1359,88 +1359,11 @@ dist.bc <- phyloseq::distance(P_Plots, method = "bray")
 permanova <- adonis2(dist.bc ~ Ecotype + Transect, data = metadata, perm=9999)
 permanova
 ```
+HeatMap 
 
-* Relative abundance of the top 50 ASVs
-
-```{r, fig.width = 20.5, fig.height = 12, echo=FALSE}
-#PlotBar
-phylo.relative <- transform_sample_counts(P_Plots, function(otu) otu/sum(otu))
-#Subset
-top <- names(sort(taxa_sums(phylo.relative), decreasing=TRUE))[1:20]
-sample_data(phylo.relative)$Transect <- factor(sample_data(phylo.relative)$Transect, levels = c(1,2,3), labels = c("1","2", "3"))
-sample_data(phylo.relative)$Ecotype <- factor(sample_data(phylo.relative)$Ecotype, levels = c("Meadow","Alder zone","Spruce-Alder", "Spruce","Pine"), labels = c("Meadow","Alder","Spruce-Alder", "Spruce","Pine"))
-#
-ps.top <- prune_taxa(top, phylo.relative)
-meta <- data.frame(meta(ps.top))
-Label <- rownames(meta)
-sample_data(ps.top)$Label <- Label
-meta <- data.frame(meta(ps.top))
-taxonomy <- data.frame(tax_table(ps.top))
-otu.relative <- data.frame(abundances(ps.top, "compositional"))
-#
-batch1_taxonomy_otu_metadata <- merge(taxonomy, otu.relative, by=0, all=TRUE)
-#
-batch1_media_melt <- melt(batch1_taxonomy_otu_metadata, id.vars=c("Row.names", "Kingdom","Phylum", "Class", "Order", "Family", "Genus","Species", "ASV_id.1","ASV", "taxa_name"))
-
-colnames(batch1_media_melt) <- c("Row.names", "Kingdom","Phylum", "Class", "Order", "Family", "Genus","Species","ASV_id.1","ASV", "taxa_name","sample", "RA")
-#
-Batch1_taxa_all_metadata2 =  merge(batch1_media_melt, meta, by.x = "sample", by.y = "Label")
-Batch1_taxa_all_metadata2 = Batch1_taxa_all_metadata2[!Batch1_taxa_all_metadata2$Genus =="Unknown",]
-#
-list_ <- data.frame(Batch1_taxa_all_metadata2 %>%
-                      dplyr::group_by(Genus) %>%
-                      dplyr::summarise(RA_count = sum(as.numeric(RA))) %>%
-                      dplyr::arrange(desc(RA_count)))
-list_sp <- list_$Genus
-#
-#Batch1_taxa_all_metadata2$Species <- factor(Batch1_taxa_all_metadata2$Species, levels = list_sp)
-#Batch1_taxa_all_metadata2$taxa_name <- factor(Batch1_taxa_all_metadata2$taxa_name, levels = list_sp)
-#Batch1_taxa_all_metadata2$Phylum <- factor(Batch1_taxa_all_metadata2$Phylum, levels = list_sp)
-#Batch1_taxa_all_metadata2$Family <- factor(Batch1_taxa_all_metadata2$Family, levels = list_sp)
-Batch1_taxa_all_metadata2$Genus <- factor(Batch1_taxa_all_metadata2$Genus, levels = list_sp)
-##Changing the color
-
-getPalette = colorRampPalette(brewer.pal(8, "Dark2"))
-speciesList = unique(tax_table(ps.top)[,"Genus"])
-speciesPalette = getPalette(length(speciesList))
-names(speciesPalette) = speciesList
-#Change for Species, Genus
-ggplot(data=Batch1_taxa_all_metadata2, aes(x=Ecotype, group = Genus)) +
-  geom_bar(aes(y=RA, fill = Genus),stat="identity", alpha=.7) + 
-  theme_pubr(border = TRUE) +
-  theme(axis.text.x = element_text(size = 14, hjust = 0.5), 
-        axis.text.y = element_text(size = 14, hjust = 1),
-        axis.title.x.bottom = element_text(size = 18),
-        axis.title.y = element_text(size = 18),
-        legend.position = "bottom") +
-  scale_fill_manual(values= speciesPalette) +
-  facet_grid(~Transect, scales = "free", space = "free")
-
-
-
-ggplot(data=Batch1_taxa_all_metadata2, aes(x=Ecotype, group = Genus)) +
-  geom_bar(aes(y=RA, fill = Genus),stat="identity", alpha=.7) + 
-  theme_pubr(border = TRUE) +
-  theme(axis.text.x = element_text(size = 14, hjust = 0.5), 
-        axis.text.y = element_text(size = 14, hjust = 1),
-        axis.title.x.bottom = element_text(size = 18),
-        axis.title.y = element_text(size = 18),
-        legend.position = "bottom") +
-  scale_fill_manual(values= speciesPalette) +
-  facet_grid(~Transect)
-#Rplot_PlotBar_ASVs
-```
 
 ```{r}
 #Heatmap 
-
-#Using raref 
-# psdata
-# write_phyloseq(P_Plots, type = "METADATA")
-
-# P_Plots@sam_data$CopyNumber <- as.numeric (c("56547216,06","1958795290","1610243098","176573431,2","10309433,02","4102423565","656843900,4","693875330,7","115008831,8","3378601403","1554745882","3631465937","774323956,3","87565573,72","377544210,5","3189735171","297379382,4","66300059,27","653127690,5","7015954105","90486793,16","127655843,7","3687956899","3857200314","3295133438","1124769464","80251070,77","5825489676","2509789932","370848302,5","5321537786","3487721616","2811105415","7290249897","111414313,2","7391533559","4369972598","7528113879","1231526770","3176809071","10563935153","912523229,2","6437853632","2832182794","1592097562"))
-
-
 meta_data_2 <- read.table("/Users/juliana/Documents/NBIS/Projects/6198/Metadado/metadata_copynumber_sampleA.tsv", header=T, row.names=1, check.names=T, sep="\t")
 sample_data(P_Plots) <- meta_data_2
 
@@ -1451,14 +1374,11 @@ P_Plots@sam_data$CopyNumber2 <- as.numeric(P_Plots@sam_data$CopyNumber)
 genefilter2 = genefilter_sample(P_Plots, filterfun_sample(function(x) x > 3), A=0.3*nsamples(P_Plots))
 genefilter_tax2 = prune_taxa(genefilter2, P_Plots)
 #MetaData
-#adding metadata
-# genefilter_tax2@sam_data$CopyNumber <- as.numeric (c("56547216,06","1958795290","1610243098","176573431,2","10309433,02","4102423565","656843900,4","693875330,7","115008831,8","3378601403","1554745882","3631465937","774323956,3","87565573,72","377544210,5","3189735171","297379382,4","66300059,27","653127690,5","7015954105","90486793,16","127655843,7","3687956899","3857200314","3295133438","1124769464","80251070,77","5825489676","2509789932","370848302,5","5321537786","3487721616","2811105415","7290249897","111414313,2","7391533559","4369972598","7528113879","1231526770","3176809071","10563935153","912523229,2","6437853632","2832182794","1592097562"))
-
 metaR <- meta(genefilter_tax2)
 
 # Reorder Transect
 metaR$Transect = factor(metaR$Transect, levels = c("1", "2","3")) #D46C4E
-metaR_Transect <- c("#264D59","#77A515","#D46C4E") #D46C4E #43978D
+metaR_Transect <- c("#C0C0C0","#BC8F8F","#F5DEB3") #D46C4E #43978D
 names(metaR_Transect) <- levels(metaR$Transect)
 
 # Reorder Ecotype
@@ -1468,13 +1388,19 @@ names(metaR_Ecotype) <- levels(metaR$Ecotype)
 
 # Add to a list, where names match those in factors dataframe
 metaR_AnnColour <- list(
+  Transect = metaR_Transect)
+
+metaR_AnnColour2 <- list(
+  Ecotype = metaR_Ecotype)
+
+metaR_AnnColourx <- list(
   Transect = metaR_Transect,
   Ecotype = metaR_Ecotype)
 
 # Check the output
 metaR_AnnColour
 
-SampleOrder = order(metaR$Transect, metaR$Ecotype)
+SampleOrder = order(metaR$Ecotype, metaR$Transect)
 meta.factors <- select(metaR, Transect, Ecotype)
 
 
@@ -1489,31 +1415,7 @@ metaR_Filter_composi.filt.ab <- transform_sample_counts(genefilter_tax2, functio
     otu_table(metaR_Filter_composi.filt.abs)<- otu_table(metaR_Filter_composi.filt.ab)*sample_data(metaR_Filter_composi.filt.ab@sam_data)$CopyNumber [n]
 }
 
-abs_plot <- data.frame(abundances(metaR_Filter_composi.filt.abs))
-
 abs_plot <- data.frame(otu_table(metaR_Filter_composi.filt.abs))
-
-
-
-################3
-# meta_ra <- data.frame(meta(metaR_Filter_composi.filt.abs))
-# Label_ra <- rownames(meta_ra)
-# sample_data(metaR_Filter_composi.filt.abs)$Label <- Label_ra
-# meta_ra2 <- data.frame(meta(metaR_Filter_composi.filt.abs))
-# 
-# taxonomy_ra <- data.frame(tax_table(metaR_Filter_composi.filt.abs))
-# abs_otu <- data.frame(abundances(metaR_Filter_composi.filt.abs))
-# 
-# 
-# #
-# taxonomy_otu_metadata <- merge(taxonomy_ra, abs_otu, by=0, all=TRUE)
-# #
-# media_melt <- melt(taxonomy_otu_metadata, id.vars=c("Row.names", "Kingdom","Phylum", "Class", "Order", "Family", "Genus","Species", "ASV_id","ASV", "taxa_name"))
-# colnames(media_melt) <- c("Row.names", "Kingdom","Phylum", "Class", "Order", "Family", "Genus","Species","ASV_id","ASV", "taxa_name","sample", "RA")
-# #
-# taxa_all_metadata2 =  merge(media_melt, meta, by.x = "sample", by.y = "Label")
-
-#################
 
 #Colocando ASV names na OTU table
 rownames(abs_plot)
@@ -1522,48 +1424,33 @@ tax_m <- taxonomy_otu_compositional_copy$taxa_name
 rownames(abs_plot) <- tax_m
 abs_plot
 
-# meta_taxonomy_otu_compositional_copy <- data.frame(sample_data(WTOE_Filter_composi.filt.ab))
-# meta_m <- rownames(meta_taxonomy_otu_compositional_copy)
-# colnames(abs_plot) <- meta_m
-
-
-
 ##Plot
-#plot_Log10_max <- log10(abs_plot)/max(log10(abs_plot) +1)
-plot_Log10_max <- log10(abs_plot +1)
-#plot_Log10_max[] = lapply(plot_Log10_max, sub, pattern = "-Inf", replacement = "", fixed = TRUE)
+plot_Log10_max <- log10(abs_plot)/max(log10(abs_plot) +1)
+#plot_Log10_max <- log10(abs_plot +1)
+plot_Log10_max[plot_Log10_max == "-Inf"] <- 0
 
 colsHeat<- c("#F7F7F7", "#92C5DE", "#0571B0", "#F4A582", "#CA0020")
 
-
-#cal_z_score <- function(x){
-  (x - mean(x)) / sd(x)
-}
-#data_subset_norm <- t(apply(abs_plot, 1, cal_z_score))
-
-
-###
-
-
 pheatmap(plot_Log10_max[, SampleOrder],
          cluster_cols = FALSE,
+         cluster_rows = TRUE,
+         gaps_row = 5, 
          clustering_distance_rows = "euclidean",
          clustering_distance_cols  = "euclidean",
-         annotation_colors = metaR_AnnColour, annotation_col = meta.factors, 
-         #annotation_colors = OE_WT_AnnColour, 
+         annotation_colors = metaR_AnnColourx, annotation_col = meta.factors, 
          show_colnames = FALSE,
          color = colorRampPalette(c("white", colsHeat))(50),
          border_color = "#f8edeb",
          display_numbers = FALSE)
 
-#########colsH <- colorRampPalette(rev(brewer.pal(5,"RdBu")))(20)
+
+meta.factorsT <- select(metaR, Transect)
+meta.factorsE <- select(metaR, Ecotype)
 
 
-barplot(c(2,5,7), col = brewer.pal(n = 3, name = "RdBu"))
 ```
 
 ```{r}
-
 Taxa_DataFrame <- data.frame(tax_table(metaR_Filter_composi.filt.abs))
 Taxa_DataFrame_F <- Taxa_DataFrame %>% select(1,2,3,4,5,6,10)
 Taxa_Matrix <- as.matrix(Taxa_DataFrame_F)
@@ -1575,7 +1462,6 @@ sample_data(pseq_plot_heat)$SampleID <- rown
 sample_data(pseq_plot_heat) <- (sample_data(pseq_plot_heat)[, c(14,1,2,3,4,5,6,7,8,9,10,11,12,13)])
 
 tax_table(pseq_plot_heat) <- as.matrix(Taxa_Matrix)
-#ampvis2_obj <- phyloseq_to_ampvis2(pseq_plot_heat)
 
 count_f <- data.frame(otu_table(pseq_plot_heat))
 meta_f <- data.frame(sample_data(pseq_plot_heat))
@@ -1593,10 +1479,9 @@ d <- amp_load(
 
 teste <-  amp_heatmap(
   d,
-  #group_by = "time",
   group_by = c("Transect"),
   facet_by = c("Ecotype"),
-  normalise = FALSE,
+  normalise = TRUE,
   #tax_add = "OTU",
   tax_aggregate = "Species",
   tax_show = 100,
@@ -1609,6 +1494,7 @@ teste <-  amp_heatmap(
   plot_colorscale = "log10",
   plot_na = TRUE,
   measure = "mean",
+  #sort_by = "Transect 1",
   min_abundance = 0.01,
   max_abundance = NULL,
   normalise_by = NULL,
@@ -1621,11 +1507,78 @@ teste <-  amp_heatmap(
   functions = c("MiDAS", "Filamentous", "AOB", "NOB", "PAO", "GAO"),
   rel_widths = c(0.75, 0.25)
 )
-#Rplot_HeatMap_Top50_Species
 
 print(teste)
 ```
 
+* Relative abundance of the top 20 ASVs
+
+```{r, fig.width = 20.5, fig.height = 12, echo=FALSE}
+#PlotBar
+#phylo.relative <- transform_sample_counts(P_Plots, function(otu) otu/sum(otu))
+#Subset
+top <- names(sort(taxa_sums(metaR_Filter_composi.filt.abs), decreasing=TRUE))[1:20]
+
+sample_data(metaR_Filter_composi.filt.abs)$Transect <- factor(sample_data(metaR_Filter_composi.filt.abs)$Transect, levels = c(1,2,3), labels = c("1","2", "3"))
+
+sample_data(metaR_Filter_composi.filt.abs)$Ecotype <- factor(sample_data(metaR_Filter_composi.filt.abs)$Ecotype, levels = c("Meadow","Alder zone","Spruce-Alder", "Spruce","Pine"), labels = c("Meadow","Alder","Spruce-Alder", "Spruce","Pine"))
+#
+ps.top <- prune_taxa(top, phylo.relative)
+meta <- data.frame(meta(ps.top))
+Label <- rownames(meta)
+sample_data(ps.top)$Label <- Label
+meta <- data.frame(meta(ps.top))
+taxonomy <- data.frame(tax_table(ps.top))
+otu.relative <- data.frame(otu_table(ps.top))
+#
+batch1_taxonomy_otu_metadata <- merge(taxonomy, otu.relative, by=0, all=TRUE)
+#
+batch1_media_melt <- melt(batch1_taxonomy_otu_metadata, id.vars=c("Row.names", "Kingdom","Phylum", "Class", "Order", "Family", "Genus","Species", "taxa_name"))
+
+colnames(batch1_media_melt) <- c("Row.names", "Kingdom","Phylum", "Class", "Order", "Family", "Genus","Species","taxa_name","sample", "RA")
+#
+Batch1_taxa_all_metadata2 =  merge(batch1_media_melt, meta, by.x = "sample", by.y = "Label")
+Batch1_taxa_all_metadata2 = Batch1_taxa_all_metadata2[!Batch1_taxa_all_metadata2$Genus =="Unknown",]
+#
+list_ <- data.frame(Batch1_taxa_all_metadata2 %>%
+                      dplyr::group_by(Genus) %>%
+                      dplyr::summarise(RA_count = sum(as.numeric(RA))) %>%
+                      dplyr::arrange(desc(RA_count)))
+list_sp <- list_$Genus
+#
+#Batch1_taxa_all_metadata2$Species <- factor(Batch1_taxa_all_metadata2$Species, levels = list_sp)
+#Batch1_taxa_all_metadata2$taxa_name <- factor(Batch1_taxa_all_metadata2$taxa_name, levels = list_sp)
+#Batch1_taxa_all_metadata2$Phylum <- factor(Batch1_taxa_all_metadata2$Phylum, levels = list_sp)
+#Batch1_taxa_all_metadata2$Family <- factor(Batch1_taxa_all_metadata2$Family, levels = list_sp)
+Batch1_taxa_all_metadata2$Genus <- factor(Batch1_taxa_all_metadata2$Genus, levels = list_sp)
+##Changing the color
+
+ps.top_list <- subset_taxa(ps.top, (Genus!="Unknown") | is.na(Genus))
+
+getPalette = colorRampPalette(brewer.pal(8, "Dark2"))
+speciesList = unique(tax_table(ps.top_list)[,"Genus"])
+speciesPalette = getPalette(length(speciesList))
+names(speciesPalette) = speciesList
+#Change for Species, Genus
+
+
+Batch1_taxa_all_metadata2$R2 <- sapply(Batch1_taxa_all_metadata2$RA, as.numeric)
+Batch1_taxa_all_metadata2$Relative_Abundance <- log10(as.numeric(Batch1_taxa_all_metadata2$R2 +1))
+
+
+RelativeAbundance <-  ggplot(data=Batch1_taxa_all_metadata2, aes(x=Ecotype, group = Genus)) +
+  geom_bar(aes(y=Relative_Abundance, fill = Genus),stat="identity", alpha=.7) + 
+  theme_pubr(border = TRUE) +
+  theme(axis.text.x = element_text(size = 14, hjust = 0.5), 
+        axis.text.y = element_text(size = 14, hjust = 1),
+        axis.title.x.bottom = element_text(size = 18),
+        axis.title.y = element_text(size = 18),
+        legend.position = "bottom") +
+  scale_fill_manual(values= speciesPalette) +
+  facet_wrap(~Transect, ncol = 1, scales = "free")
+
+RelativeAbundance
+```
 
 # Summary
 
