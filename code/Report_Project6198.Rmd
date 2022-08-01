@@ -136,7 +136,7 @@ __NBIS Staff:__ `r paste0(rep_nbis," (",rep_nbis_email,")")`
 
 # Setup
 
-```{r message=FALSE, warning=FALSE, echo=FALSE,include=FALSE}
+```{r message=FALSE, warning=FALSE}
 ## LIBRARIES
 library("dada2")
 library("devtools")
@@ -212,6 +212,8 @@ head(sample_info_tab)
 
 # Workflow
 
+I'm describing here the most important steps in the analysis. Moreover, it is possible to find all parameters and figures at the .rmd file.
+
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Reading Files
 path = "/Users/juliana/Documents/NBIS/Projects/6198/Data/Data2" #Data2
@@ -236,7 +238,7 @@ filtRs = file.path(filt_path, paste0(sample.names, "_R_filt.fastq"))
 #dev.off()
 ```
 
-**Inspect read quality profiles** \
+### Inspect read quality profiles \
 
 **Quality profiles of the forward reads:** \
 
@@ -264,7 +266,7 @@ ggsave("./PLOTS/Full_Data/QC/2-fnRQC.pdf", b)
 
 The reverse reads are of significantly worse quality, especially at the end, which is common in Illumina sequencing. This isn’t too worrisome, as DADA2 incorporates quality information into its error model which makes the algorithm robust to lower quality sequence, but trimming as the average qualities crash will improve the algorithm’s sensitivity to rare sequence variants. Based on these profiles, I truncated the reverse reads at position 200 where the quality distribution crashes. \
 
-**Identify primers** \
+### Identify primers \
 
 The universal primer set 5.8S and ITS1F (Fierer et al., 2005; Yarwood et al., 2010) primers were used to amplify this dataset. We record the DNA sequences, including ambiguous nucleotides, for those primers.
 
@@ -339,7 +341,7 @@ for(i in seq_along(fnFs)) {
 }
 ```
 
-**sanity check of primers and adapters** \
+**Sanity check of primers and adapters** \
 ```{r,echo=FALSE}
 #sanity check
 rbind(FWD.ForwardReads = sapply(FWD.orients, primerHits, fn = fnFs.cut[[1]]), 
@@ -404,8 +406,8 @@ table(file.exists(filtRs))
 ```
 
 ```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, include=FALSE}
-plotQualityProfile(filtFs[1:12])
-plotQualityProfile(filtFs[1:12])
+plotQualityProfile(filtFs[1:6])
+plotQualityProfile(filtFs[1:6])
 ```
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
@@ -414,9 +416,11 @@ errR <- learnErrors(filtRs, multithread = TRUE)
 ```
 
 
-**Learn the Error Rates**
+### Learn the Error Rates
 
+The DADA2 method relies on a parameterized model of substitution errors to distinguish sequencing errors from real biological variation. Because error rates can (and often do) vary substantially between sequencing runs and PCR protocols, the model parameters can be discovered from the data itself using a form of unsupervised learning in which sample inference is alternated with parameter estimation until both are jointly consistent.
 
+In order to verify that the error rates have been reasonably well-estimated, we inspect the fit between the observed error rates (black points) and the fitted error rates (black lines) in the next Figure:
 
 ```{r,fig.cap="Error Rate Foward Reads.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
 #Plot Error Rate
@@ -432,6 +436,16 @@ ggsave("./PLOTS/Full_Data/QC/4-errR.pdf", d)
 
 Everything looks reasonable and we proceed with confidence. \
 
+>After filtering, we moved to the next step:
+>
+Sequence inference:
+The DADA2 sequence inference step removed - nearly - all substitution and indel errors from the data. We now merge together the inferred forward and reverse sequences, removing paired sequences that do not perfectly overlap as a final control against residual errors.
+
+### Construct sequence table and remove chimeras
+
+>The DADA2 method produces a sequence table valued by the number of times each sequence was observed in each sample.
+
+>Notably, chimeras have not yet been removed. The error model in the sequence inference algorithm does not include a chimera component, and therefore we expect this sequence table to include many chimeric sequences. We now remove chimeric sequences by comparing each inferred sequence to the others in the table, and removing those that can be reproduced by stitching together two more abundant sequences.
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Dereplicate identical reads
@@ -474,7 +488,7 @@ seqtab <- makeSequenceTable(mergers)
 dim(seqtab)
 ```
 
-```{r,echo=FALSE,include=FALSE, eval = FALSE}
+```{r,message=FALSE, warning=FALSE, echo=FALSE,include=FALSE, eval = FALSE}
 #Remove chimeras
 seqtab.nochim <- removeBimeraDenovo(seqtab, 
                                     method="consensus", 
@@ -482,7 +496,7 @@ seqtab.nochim <- removeBimeraDenovo(seqtab,
                                     verbose=TRUE)
 ```
 
-```{r,echo=FALSE,include=FALSE, eval = FALSE}
+```{r,message=FALSE, warning=FALSE, echo=FALSE,include=FALSE, eval = FALSE}
 #Track reads through the pipeline
 getN <- function(x) sum(getUniques(x))
 
@@ -502,20 +516,37 @@ table(nchar(getSequences(seqtab.nochim)))
 table(nchar(getSequences(seqtab)))
 ```
 
-```{r,echo=FALSE,include=FALSE, eval = FALSE}
-hist(nchar(getSequences(seqtab.nochim)), main="Distribution of sequence lengths")
+
+>The frequency of chimeric sequences varies substantially from dataset to dataset, and depends on on factors including experimental procedures and sample complexity. 
+```{r message=FALSE, warning=FALSE}
 sum(seqtab.nochim)/sum(seqtab)
 ```
 
-```{r,fig.cap="QC Foward Reads.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
+### Inspect distribution of sequence lengths: \
+
+As expected, quite a bit of length variability in the the amplified ITS region.
+
+```{r,fig.cap="Distribution of sequence lengths.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
+ggsave("./PLOTS/Full_Data/QC/5-lengh_Distribution.pdf")
+hist(nchar(getSequences(seqtab.nochim)), main="Distribution of sequence lengths")
+dev.off()
+
+```
+
+### Track reads through the pipeline \
+We now inspect the the number of reads that made it through each step in the pipeline to verify everything worked as expected.
+
+```{r,fig.cap="Track Reads.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
 #head(track)
 ma <- data.matrix(track)
-ggsave("./PLOTS/Full_Data/QC/5-track_reads.pdf")
+ggsave("./PLOTS/Full_Data/QC/6-track_reads.pdf")
 barplot((track), main ="Track Reads", font.axis = 1, cex.axis=1, beside=TRUE, ylim=range(pretty(c(0,track))))
 #hist(seqComplexity(seqtab.nochim), 100)
 dev.off()
 
 ```
+
+Looks good! We kept the majority of our raw reads. The most impacting was the filter step.
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Assign taxonomy
@@ -576,6 +607,13 @@ pseq <- phyloseq(tax_table(taxa),
 sample_data(sample_info_tab),
 otu_table(seqtab.nochim, taxa_are_rows = FALSE),
 seqs)#,
+
+# pseqTSTE <- phyloseq(tax_table(taxa), 
+# sample_data(sample_info_tab),
+# otu_table(seqtab.nochim, taxa_are_rows = FALSE),
+# seqs, phy_tree(fitGTR$tree))
+
+
 #phy_tree(fitGTR$tree)) Not addede
 taxa_names(pseq) <- paste0("ASV", seq(ntaxa(pseq)))
 ```
@@ -713,15 +751,26 @@ ps1
 
 ```
 
-```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE}
+
+### Taxa prevalence versus total counts.
+
+```{r,fig.cap="Taxa prevalence.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
 # Subset to the remaining phyla
 prevdf1 = subset(prevdf, Phylum %in% get_taxa_unique(ps1, "Phylum"))
-ggplot(prevdf1, aes(TotalAbundance, Prevalence / nsamples(ps0),color=Phylum)) +
+
+phylum_plot <- ggplot(prevdf1, aes(TotalAbundance, Prevalence / nsamples(ps0),color=Phylum)) +
   # Include a guess for parameter
   geom_hline(yintercept = 0.05, alpha = 0.5, linetype = 2) + geom_point(size = 2, alpha = 0.7) +
   scale_x_log10() +  xlab("Total Abundance") + ylab("Prevalence [Frac. Samples]") +
   facet_wrap(~Phylum) + theme(legend.position="none")
+phylum_plot
+ggsave("./PLOTS/Full_Data/QC/7-Taxa_prevalence.pdf", phylum_plot)
+
 ```
+
+Each point is a different taxa. Exploration of the data in this way is often useful for selecting filtering parameters, like the minimum prevalence criteria we will used to filter the data above.
+
+>In this study, I removed taxa not seen more than 2 times in at least 1% of the samples. This protects against an ASV with small mean & trivially large C.V.
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Remove taxa not seen more than 2 times in at least 1% of the samples. This protects against an OTU with small mean & trivially large C.V.
@@ -775,12 +824,38 @@ pseq <- ps_new
 summarize_phyloseq(ps_new)
 ```
 
+```{r,echo=FALSE,include=FALSE, eval = FALSE}
+#  Count prevalence
+#rank_names(pseq)
+length(get_taxa_unique(pseq, taxonomic.rank = "Kingdom")) #1
+length(get_taxa_unique(pseq, taxonomic.rank = "Phylum")) #15
+length(get_taxa_unique(pseq, taxonomic.rank = "Class")) #53
+length(get_taxa_unique(pseq, taxonomic.rank = "Order")) #128
+length(get_taxa_unique(pseq, taxonomic.rank = "Family")) #232
+length(get_taxa_unique(pseq, taxonomic.rank = "Genus")) #458
+length(get_taxa_unique(pseq, taxonomic.rank = "Species")) #551
+
+```
+
+
+> **Count prevalence** \
+> - **Kingdom** = 1\
+>-- **Phylum** = 15\
+>--- **Class** = 53\
+>--- **Order** = 128\
+>---- **Family** = 232\
+>----- **Genus** = 458\
+>------ **ASVs** = 551
+
 ## Replicates Evaluation
 
-Alpha Diversity Plot comparing the Replicates A and B.
+In this step an evaluation of the replicates has been performed. The main goal was to understand if they are any significant difference between the replicates A and B.
 
-Quality control analysis using matched samples from 3 different Transects: A, B and C of the experiment and replicates samples on each Ecotype.
+**Alpha Diversity Plot comparing the Replicates A and B.**
+
+>Quality control analysis using matched samples from 3 different Transects: A, B and C of the experiment and replicates samples on each Ecotype.
 Comparison of alpha diversity in technical replicates samples on all Ecotypes from each Transect. ASV richness and ASV Shannon diversity.
+
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Def Colors
 cols_Type <- c("A" = "#264D59", "B" = "#77A515")
@@ -804,7 +879,7 @@ df$Ecotype <- factor(df$Ecotype, levels = c("Meadow","Alder zone","Spruce-Alder"
 #df$Ecotype <- factor(df$Ecotype, levels = c("Meadow","Alder zone","Spruce-Alder", "Spruce","Pine"), labels = c("I", "II", "III","IV","V"))
 ```
 
-```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
+```{r,fig.cap="Alpha Diversity.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE}
 ##Plot measures
 dose.labs <- c("Richness", "Shannon")
 names(dose.labs) <- c("Observed", "Shannon")
@@ -814,7 +889,7 @@ scales <- list(
             ))
 #
 options(ggrepel.max.overlaps = Inf)
-df %>% 
+plot_alpha1 <- df %>% 
   gather(key = metric, value = value, c("Observed", "Shannon")) %>%
   mutate(metric = factor(metric, levels = c("Observed", "Shannon"))) %>%
   ggplot(aes(x = Ecotype, y = value, color = Ecotype)) + #,shape = Type
@@ -830,13 +905,17 @@ df %>%
   theme(legend.title = element_blank()) +
   facet_nested(metric~Transect, labeller=labeller(metric = dose.labs), scales = "free") +
   facetted_pos_scales(y = scales) 
+plot_alpha1
+
+ggsave("./PLOTS/Full_Data/Evaluation/00-plot_alpha1.pdf", plot_alpha1, width = 14.5, height = 7.58)
 
 ```
+>Evaluation of alpha diversity: looking for difference at the count read distribution
 
-
-```{r,echo=FALSE, eval = FALSE}
+```{r,fig.cap="Alpha Diversity Count.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
 options(ggrepel.max.overlaps = Inf)
-df %>% 
+
+alpha_count<- df %>% 
   gather(key = metric, value = value, c("Observed", "Shannon")) %>%
   mutate(metric = factor(metric, levels = c("Observed", "Shannon"))) %>%
   ggplot(aes(x = Ecotype, y = value, color = Ecotype, shape = Type,group=interaction(Transect, Ecotype))) +
@@ -856,11 +935,17 @@ df %>%
   theme(legend.title = element_blank()) +
   facet_nested(metric~Transect, labeller=labeller(metric = dose.labs), scales = "free_y", space = "free_x") +
   facetted_pos_scales(y = scales)
+
+ggsave("./PLOTS/Full_Data/Evaluation/00-plot_alpha_count.pdf", alpha_count, width = 14.5, height = 7.58)
+
 ```
-* Beta Diversity Plot comparing the Replicates A and B.
+
+**Beta Diversity Plot comparing the Replicates A and B.**
+
+Quality control analysis using matched samples from replicates A and B. Beta diversity using Jensen-Shannon distance 
 
 
-```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
+```{r,fig.cap="Beta Diversity Distance",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
 ##Replicates
 #Filter all samples with triplicates
 Replicates <- subset_samples(pseq, Type =="A" | Type=="B")
@@ -895,7 +980,7 @@ distance_matrix_melt_filt_info<-merge(distance_matrix_melt_filt, samdf, by=0)
 distance_matrix_melt_filt_info$Transect <- factor(distance_matrix_melt_filt_info$Transect, levels = c(1,2,3), labels = c("1","2", "3"))
 distance_matrix_melt_filt_info$Ecotype <- factor(distance_matrix_melt_filt_info$Ecotype, levels = c("Meadow","Alder zone","Spruce-Alder", "Spruce","Pine"), labels = c("Meadow","Alder","Spruce-Alder", "Spruce","Pine"))
 #
-sup2 <- ggplot(distance_matrix_melt_filt_info, aes(Ecotype, value, shape = Type)) +
+Beta_Replicates <- ggplot(distance_matrix_melt_filt_info, aes(Ecotype, value, shape = Type)) +
   geom_jitter(shape=16, size = 5, position=position_jitter(0.2), color = "black", alpha = 0.7) +
   geom_text_repel(aes(label = User_ID), nudge_x = 0.02, size = 4.0, segment.alpha = 0.5) +
   theme_pubr(border = TRUE) +
@@ -911,32 +996,72 @@ sup2 <- ggplot(distance_matrix_melt_filt_info, aes(Ecotype, value, shape = Type)
         strip.text.y = element_text(size = 12, face = "bold")) +
   labs(x="Ecotype", y = "Jensen-Shannon Distance (JSD)") +
   ylim(0, 1) 
-print(sup2)
-```
-* Beta Diversity Plot comparing the Replicates A and B.
+print(Beta_Replicates)
 
-```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
+ggsave("./PLOTS/Full_Data/Evaluation/02-Plot_beta_distance.pdf", Beta_Replicates, width = 14.5, height = 7.58)
+```
+
+**Beta Diversity Plot comparing the Replicates A and B.**
+
+```{r,echo=FALSE, warning=FALSE, message=FALSE, include=FALSE}
 ##PCOA
 ##Relative Abundance
 
-#Remove zeros
-#ps4 = filter_taxa(pseq, function(x) sum(x > 10) > (0.8*length(x)), TRUE)
+genefilter_pseq = genefilter_sample(pseq, filterfun_sample(function(x) x > 5), A=0.5*nsamples(pseq))
 
-Plots <- transform_sample_counts(pseq, function(otu) otu/sum(otu))
+genefilter_pseq_tax = prune_taxa(genefilter_pseq, pseq)
+
+#Transform to even sampling depth.
+genefilter_pseq_tax_t = transform_sample_counts(genefilter_pseq_tax, function(x) 1E6 * x/sum(x))
+
+genefilter_pseq_tax_t.ord <- ordinate(genefilter_pseq_tax_t, "NMDS")
+
 #
-expt = prune_taxa(names(sort(taxa_sums(Plots), TRUE)[1:1000]), Plots)
-ord<- sqrt(phyloseq::distance(Plots,Type = "samples", "jsd"))
-pcoa=ordinate(Plots, "PCoA", distance=ord)
+genefilter_pseq_tax_t@sam_data$Transect <- factor(genefilter_pseq_tax_t@sam_data$Transect, levels = c(1,2,3), labels = c("1","2", "3"))
+
+#Type
+
+genefilter_pseq_tax_t@sam_data$Ecotype <- factor(genefilter_pseq_tax_t@sam_data$Ecotype, levels = c("Meadow","Alder zone","Spruce-Alder", "Spruce","Pine"), labels = c("Meadow","Alder","Spruce-Alder", "Spruce","Pine"))
+
 #
-expt@sam_data$Transect <- factor(expt@sam_data$Transect, levels = c(1,2,3), labels = c("1","2", "3"))
-expt@sam_data$Ecotype <- factor(expt@sam_data$Ecotype, levels = c("Meadow","Alder zone","Spruce-Alder", "Spruce","Pine"), labels = c("Meadow","Alder","Spruce-Alder", "Spruce","Pine"))
-ord_DataFrame <- plot_ordination(expt, pcoa, "samples", justDF ="TRUE")
-#
-ordplot2 <- (ordplot <- plot_ordination(expt, pcoa, "samples", color="Ecotype", shape = "Transect") + 
+ord_DataFrame_tx_pseq <- plot_ordination(genefilter_pseq_tax_t, genefilter_pseq_tax_t.ord, "samples", justDF ="TRUE")
+```
+
+```{r,fig.cap="Beta Diversity Replicates.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
+ggsave("./PLOTS/Full_Data/Evaluation/03-Beta_Diversity.pdf")
+ordplot_tx_pseq <- (ordplot_pseq <- plot_ordination(genefilter_pseq_tax_t, genefilter_pseq_tax_t.ord, "samples", color="Ecotype", shape = "Transect") + 
                geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.3) + 
                geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.3) +
                geom_point(size = 5, color = "grey") +
-               geom_text_repel(aes(label = Type), nudge_x = 0.04, size = 3.0, segment.alpha = 0.5) +
+               scale_shape_manual(values=c(23,21,24)) +
+               theme_pubr(border = TRUE) +
+               coord_fixed(ratio = 1) +
+              geom_text_repel(aes(label = Type), nudge_x = 0.06, size = 3.0, segment.alpha = 0.5) +
+
+               theme(axis.text=element_text(size=14), 
+                     axis.text.x = element_text(size = 12, hjust = 0.5), 
+                     axis.title.y = element_text(size = 18),
+                     legend.text=element_text(size=14), 
+                     legend.title=element_text(size=0),
+                     legend.position="bottom",
+                     axis.title.x = element_text(size = 18), 
+                     strip.text.x = element_text(size = 20, face = "bold"))) +
+  scale_color_manual(values = cols_Ecotype)#+
+ordplot_tx_pseq$layers <- ordplot_tx_pseq$layers[-1]
+ordplot_tx_pseq + 
+  geom_point(data=ord_DataFrame_tx_pseq, aes(x = NMDS1, y = NMDS2, fill =Ecotype, size = 4))  +
+  scale_fill_manual(values = cols_Ecotype) 
+dev.off()
+```
+
+```{r,fig.cap="Beta Diversity Replicates by Type.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
+
+ggsave("./PLOTS/Full_Data/Evaluation/04-Beta_Diversity.pdf")
+
+ordplot_tx_pseq2 <- (ordplot_pseq_2 <- plot_ordination(genefilter_pseq_tax_t, genefilter_pseq_tax_t.ord, "samples", color="Ecotype", shape = "Transect") + 
+               geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.3) + 
+               geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.3) +
+               geom_point(size = 5, color = "grey") +
                scale_shape_manual(values=c(23,21,24)) +
                theme_pubr(border = TRUE) +
                coord_fixed(ratio = 1) +
@@ -948,13 +1073,17 @@ ordplot2 <- (ordplot <- plot_ordination(expt, pcoa, "samples", color="Ecotype", 
                      legend.position="bottom",
                      axis.title.x = element_text(size = 18), 
                      strip.text.x = element_text(size = 20, face = "bold"))) +
-  scale_color_manual(values = cols_Ecotype)+
-  labs(x="PCo1 [13.3%]", y = "PCo2 [9.4%]", element_text(face = "bold"))
-ordplot2$layers <- ordplot2$layers[-1]
-ordplot2 + 
-  geom_point(data=ord_DataFrame, aes(x = Axis.1, y = Axis.2, fill =Ecotype, size = 4))  +
-  scale_fill_manual(values = cols_Ecotype) 
+  scale_color_manual(values = cols_Ecotype)#+
+ordplot_tx_pseq$layers <- ordplot_tx_pseq$layers[-1]
+ordplot_tx_pseq + 
+  geom_point(data=ord_DataFrame_tx_pseq, aes(x = NMDS1, y = NMDS2, fill =Ecotype, size = 4))  +
+  scale_fill_manual(values = cols_Ecotype) +
+  facet_grid(~Type)
+
+dev.off()
 ```
+
+>In summary: there is no difference between A and B samples. In this way we choose working the replicate A.
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Removing replicates 
@@ -962,7 +1091,7 @@ P_Plots <- subset_samples(pseq, Main_Analysis =="Yes")
 ```
 
 Rarefaction
-```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE, message=FALSE, warning=FALSE}
+```{r,fig.cap="Rarefaction.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
 psdata = rarefy_even_depth(P_Plots)
 plot(as(otu_table(psdata), 'vector'), as(otu_table(psdata), 'vector'))
 rarecurve(t(otu_table(psdata)), step=50, cex=0.5)
@@ -975,13 +1104,13 @@ rarecurve(t(otu_table(P_Plots)), step=50, cex=0.5)
 
 * Alpha Diversity Plot - A.
 
-## raw **alpha-diversity**, i.e. without rarefying
+Raw **alpha-diversity**, i.e. without rarefying
 
 - comparing alpha diversity based on raw data has the huge problem of ignoring sample size differences. Usually there is a trend that more reads correlate with higher diversity.
 - Here, therefore I checked, whether there are significant sample size differences between the groups. 
 - We further look at the residuals of a linear fit alpha diversity vs sample size to correct for this confounder.
 
-### Check whether sample_sums/sample sizes/library sizes differ between groups
+- Check whether sample_sums/sample sizes/library sizes differ between groups
 
 - sample size adjustment has no influence on richness, so sample_sizes are compared for raw counts
 
@@ -1003,7 +1132,7 @@ df2$Ecotype <- factor(df2$Ecotype, levels = c("Meadow","Alder zone","Spruce-Alde
 ```
 
 
-```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
+```{r,fig.cap="AlphaDiversity Main Analysis.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
 ##Plot measures
 PY <- levels(df2$Ecotype) # get the variables
 PY.pairs <- combn(seq_along(PY), 2, simplify = FALSE, FUN = function(i)PY[i])
@@ -1043,7 +1172,7 @@ p +
 
 Alpha Diversity = BoxPlot
 
-```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
+```{r,fig.cap="AlphaDiversity Main Analysis.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
 options(ggrepel.max.overlaps = Inf)
 PYpb <- levels(df2$Transect) # get the variables
 PY.pairspb <- combn(seq_along(PYpb), 2, simplify = FALSE, FUN = function(i)PYpb[i])
@@ -1071,7 +1200,7 @@ summary(aov(df2$Observed ~ Transect * Ecotype, data = df2))
 aresult <- HSD.test(anova_result, "Ecotype", group = TRUE)
 ```
 
-Plot by mean
+**Plot by mean**
 
 ```{r,include=FALSE}
 #plot by mean
@@ -1117,7 +1246,7 @@ Shannon <- aggregate(df2$Shannon, list(df2$Transect, df2$Ecotype), FUN=mean)
 #write.table(df2, "/Users/juliana/Documents/GitHub/SMS-6198-22-ITS/results/DF_Main_Data.tsv", sep='\t', row.names=FALSE, quote=FALSE)
 ```
 
-```{r, fig.width = 14.5, fig.height = 7.58}
+```{r,fig.cap="AlphaDiversity Main Analysis.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
 PY4 <- levels(tt$Ecotype) # get the variables
 PY.pairs4 <- combn(seq_along(PY4), 2, simplify = FALSE, FUN = function(i)PY4[i])
 
