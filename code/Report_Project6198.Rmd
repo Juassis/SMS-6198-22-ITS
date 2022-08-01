@@ -529,8 +529,6 @@ As expected, quite a bit of length variability in the the amplified ITS region.
 ```{r,fig.cap="Distribution of sequence lengths.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
 ggsave("./PLOTS/Full_Data/QC/5-lengh_Distribution.pdf")
 hist(nchar(getSequences(seqtab.nochim)), main="Distribution of sequence lengths")
-dev.off()
-
 ```
 
 ### Track reads through the pipeline \
@@ -542,8 +540,6 @@ ma <- data.matrix(track)
 ggsave("./PLOTS/Full_Data/QC/6-track_reads.pdf")
 barplot((track), main ="Track Reads", font.axis = 1, cex.axis=1, beside=TRUE, ylim=range(pretty(c(0,track))))
 #hist(seqComplexity(seqtab.nochim), 100)
-dev.off()
-
 ```
 
 Looks good! We kept the majority of our raw reads. The most impacting was the filter step.
@@ -1051,7 +1047,6 @@ ordplot_tx_pseq$layers <- ordplot_tx_pseq$layers[-1]
 ordplot_tx_pseq + 
   geom_point(data=ord_DataFrame_tx_pseq, aes(x = NMDS1, y = NMDS2, fill =Ecotype, size = 4))  +
   scale_fill_manual(values = cols_Ecotype) 
-dev.off()
 ```
 
 ```{r,fig.cap="Beta Diversity Replicates by Type.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
@@ -1079,8 +1074,6 @@ ordplot_tx_pseq +
   geom_point(data=ord_DataFrame_tx_pseq, aes(x = NMDS1, y = NMDS2, fill =Ecotype, size = 4))  +
   scale_fill_manual(values = cols_Ecotype) +
   facet_grid(~Type)
-
-dev.off()
 ```
 
 >In summary: there is no difference between A and B samples. In this way we choose working the replicate A.
@@ -1093,9 +1086,11 @@ P_Plots <- subset_samples(pseq, Main_Analysis =="Yes")
 Rarefaction
 ```{r,fig.cap="Rarefaction.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
 psdata = rarefy_even_depth(P_Plots)
-plot(as(otu_table(psdata), 'vector'), as(otu_table(psdata), 'vector'))
+
+#plot(as(otu_table(psdata), 'vector'), as(otu_table(psdata), 'vector'))
 rarecurve(t(otu_table(psdata)), step=50, cex=0.5)
 rarecurve(t(otu_table(P_Plots)), step=50, cex=0.5)
+ggsave("./PLOTS/Full_Data/Evaluation/05-Rarefaction.pdf")
 
 ```
 
@@ -1193,12 +1188,16 @@ pb <- df2 %>%
 pb
 ```
 
-```{r}
+```{r, message=FALSE, warning=FALSE, echo=FALSE,include=FALSE}
 #https://grunwaldlab.github.io/analysis_of_microbiome_community_data_in_r/07--diversity_stats.html
 anova_result <- aov(df2$Observed ~ Transect * Ecotype, data = df2)
-summary(aov(df2$Observed ~ Transect * Ecotype, data = df2))
 aresult <- HSD.test(anova_result, "Ecotype", group = TRUE)
 ```
+
+```{r}
+summary(aov(df2$Observed ~ Transect * Ecotype, data = df2))
+```
+
 
 **Plot by mean**
 
@@ -1269,7 +1268,7 @@ p4 +
 ```
 
 
-```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
+```{r,fig.cap="AlphaDiversity Main Analysis.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
 
 ##
 options(ggrepel.max.overlaps = Inf)
@@ -1289,12 +1288,13 @@ p5 +
 * Beta Diversity Plot - A.
 
 
-```{r}
+```{r, message=FALSE, warning=FALSE, echo=FALSE,include=FALSE}
 gpca  <- ordinate(Plots, "MDS")
 # Scree plot
 plot_scree(gpca, "Scree Plot for MDS Analysis")
 ```
-```{r}
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE,include=FALSE}
 #Remove ASVs that do not show appear more than 5 times in more than half the samples
 genefilter = genefilter_sample(P_Plots, filterfun_sample(function(x) x > 5), A=0.5*nsamples(P_Plots))
 genefilter_tax = prune_taxa(genefilter, P_Plots)
@@ -1312,7 +1312,9 @@ genefilter_tax_t@sam_data$Ecotype <- factor(genefilter_tax_t@sam_data$Ecotype, l
 #
 ord_DataFrame_tx <- plot_ordination(genefilter_tax_t, genefilter_tax_t.ord, "samples", justDF ="TRUE")
 
-#
+```
+
+```{r,fig.cap="Beta Diversity Main Analysis.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
 ordplot_tx <- (ordplot <- plot_ordination(genefilter_tax_t, genefilter_tax_t.ord, "samples", color="Ecotype", shape = "Transect") + 
                geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.3) + 
                geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.3) +
@@ -1333,11 +1335,10 @@ ordplot_tx$layers <- ordplot_tx$layers[-1]
 ordplot_tx + 
   geom_point(data=ord_DataFrame_tx, aes(x = NMDS1, y = NMDS2, fill =Ecotype, size = 4))  +
   scale_fill_manual(values = cols_Ecotype) 
-
 ```
 
 
-```{r}
+```{r,fig.cap="Beta Diversity Main Analysis.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
 pord2 = (ordplot <- plot_ordination(genefilter_tax_t, genefilter_tax_t.ord, "samples", color="Ecotype", shape = "Transect") + 
                geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.3) + 
                geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.3) +
@@ -1365,7 +1366,7 @@ pord2 +
 
 * Beta Diversity Plot - B.
 
-```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
+```{r,fig.cap="Beta Diversity Main Analysis.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
 ordplot3 <- (ordplot <- plot_ordination(genefilter_tax_t, genefilter_tax_t.ord, "samples", color="Ecotype") + 
                geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.3) + 
                geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.3) +
@@ -1391,7 +1392,7 @@ ordplot3 +
 ```
 
 Ecotype
-```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE}
+```{r,fig.cap="Beta Diversity Main Analysis.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
 ordplot4 <- (ordplot <- plot_ordination(genefilter_tax_t, genefilter_tax_t.ord, "samples", color="Transect") + 
                geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.3) + 
                geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.3) +
@@ -1424,10 +1425,10 @@ dist.bc <- phyloseq::distance(P_Plots, method = "bray")
 permanova <- adonis2(dist.bc ~ Ecotype + Transect, data = metadata, perm=9999)
 permanova
 ```
+
 HeatMap 
 
-
-```{r}
+```{r, message=FALSE, warning=FALSE, echo=FALSE,include=FALSE}
 #Heatmap 
 meta_data_2 <- read.table("/Users/juliana/Documents/NBIS/Projects/6198/Metadado/metadata_copynumber_sampleA.tsv", header=T, row.names=1, check.names=T, sep="\t")
 sample_data(P_Plots) <- meta_data_2
@@ -1495,7 +1496,9 @@ plot_Log10_max <- log10(abs_plot)/max(log10(abs_plot) +1)
 plot_Log10_max[plot_Log10_max == "-Inf"] <- 0
 
 colsHeat<- c("#F7F7F7", "#92C5DE", "#0571B0", "#F4A582", "#CA0020")
+```
 
+```{r,fig.cap="AlphaDiversity Main Analysis.",  fig.width = 24.5, fig.height = 17.58, echo=FALSE, warning=FALSE, message=FALSE}
 pheatmap(plot_Log10_max[, SampleOrder],
          cluster_cols = FALSE,
          cluster_rows = TRUE,
@@ -1512,10 +1515,10 @@ pheatmap(plot_Log10_max[, SampleOrder],
 meta.factorsT <- select(metaR, Transect)
 meta.factorsE <- select(metaR, Ecotype)
 
-
 ```
 
-```{r}
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE,include=FALSE}
 Taxa_DataFrame <- data.frame(tax_table(metaR_Filter_composi.filt.abs))
 Taxa_DataFrame_F <- Taxa_DataFrame %>% select(1,2,3,4,5,6,10)
 Taxa_Matrix <- as.matrix(Taxa_DataFrame_F)
@@ -1542,6 +1545,10 @@ d <- amp_load(
 
 
 
+
+```
+
+```{r,fig.cap="AlphaDiversity Main Analysis.",  fig.width = 24.5, fig.height = 17.58, echo=FALSE, warning=FALSE, message=FALSE}
 teste <-  amp_heatmap(
   d,
   group_by = c("Transect"),
@@ -1576,9 +1583,10 @@ teste <-  amp_heatmap(
 print(teste)
 ```
 
+
 * Relative abundance of the top 20 ASVs
 
-```{r, fig.width = 20.5, fig.height = 12, echo=FALSE}
+```{r, message=FALSE, warning=FALSE, echo=FALSE,include=FALSE}
 #PlotBar
 #phylo.relative <- transform_sample_counts(P_Plots, function(otu) otu/sum(otu))
 #Subset
@@ -1630,7 +1638,9 @@ names(speciesPalette) = speciesList
 Batch1_taxa_all_metadata2$R2 <- sapply(Batch1_taxa_all_metadata2$RA, as.numeric)
 Batch1_taxa_all_metadata2$Relative_Abundance <- log10(as.numeric(Batch1_taxa_all_metadata2$R2 +1))
 
+```
 
+```{r,fig.cap="AlphaDiversity Main Analysis.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
 RelativeAbundance <-  ggplot(data=Batch1_taxa_all_metadata2, aes(x=Ecotype, group = Genus)) +
   geom_bar(aes(y=Relative_Abundance, fill = Genus),stat="identity") + #colour="#f8edeb" , alpha=.7
   theme_pubr(border = TRUE) +
