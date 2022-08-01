@@ -136,7 +136,7 @@ __NBIS Staff:__ `r paste0(rep_nbis," (",rep_nbis_email,")")`
 
 # Setup
 
-```{r message=FALSE, warning=FALSE}
+```{r message=FALSE, warning=FALSE, echo=FALSE,include=FALSE}
 ## LIBRARIES
 library("dada2")
 library("devtools")
@@ -171,99 +171,15 @@ library("pheatmap")
 library("tidyverse")
 ```
 
-```{r}
-phyloseq_to_ampvis2 <- function(physeq) {
-  #check object for class
-  if(!any(class(physeq) %in% "phyloseq"))
-    stop("physeq object must be of class \"phyloseq\"", call. = FALSE)
-  
-  #ampvis2 requires taxonomy and abundance table, phyloseq checks for the latter
-  if(is.null(physeq@tax_table))
-    stop("No taxonomy found in the phyloseq object and is required for ampvis2", call. = FALSE)
-  
-  #OTUs must be in rows, not columns
-  if(phyloseq::taxa_are_rows(physeq))
-    abund <- as.data.frame(phyloseq::otu_table(physeq)@.Data)
-  else
-    abund <- as.data.frame(t(phyloseq::otu_table(physeq)@.Data))
-  
-  #tax_table is assumed to have OTUs in rows too
-  tax <- phyloseq::tax_table(physeq)@.Data
-  
-  #merge by rownames (OTUs)
-  otutable <- merge(
-    abund,
-    tax,
-    by = 0,
-    all.x = TRUE,
-    all.y = FALSE,
-    sort = FALSE
-  )
-  colnames(otutable)[1] <- "OTU"
-  
-  #extract sample_data (metadata)
-  if(!is.null(physeq@sam_data)) {
-    metadata <- data.frame(
-      phyloseq::sample_data(physeq),
-      row.names = phyloseq::sample_names(physeq), 
-      stringsAsFactors = FALSE, 
-      check.names = FALSE
-    )
-    
-    #check if any columns match exactly with rownames
-    #if none matched assume row names are sample identifiers
-    samplesCol <- unlist(lapply(metadata, function(x) {
-      identical(x, rownames(metadata))}))
-    
-    if(any(samplesCol)) {
-      #error if a column matched and it's not the first
-      if(!samplesCol[[1]])
-        stop("Sample ID's must be in the first column in the sample metadata, please reorder", call. = FALSE)
-    } else {
-      #assume rownames are sample identifiers, merge at the end with name "SampleID"
-      if(any(colnames(metadata) %in% "SampleID"))
-        stop("A column in the sample metadata is already named \"SampleID\" but does not seem to contain sample ID's", call. = FALSE)
-      metadata$SampleID <- rownames(metadata)
-      
-      #reorder columns so SampleID is the first
-      metadata <- metadata[, c(which(colnames(metadata) %in% "SampleID"), 1:(ncol(metadata)-1L)), drop = FALSE]
-    }
-  } else
-    metadata <- NULL
-  
-  #extract phylogenetic tree, assumed to be of class "phylo"
-  if(!is.null(physeq@phy_tree)) {
-    tree <- phyloseq::phy_tree(physeq)
-  } else
-    tree <- NULL
-  
-  #extract OTU DNA sequences, assumed to be of class "XStringSet"
-  if(!is.null(physeq@refseq)) {
-    #convert XStringSet to DNAbin using a temporary file (easiest)
-    fastaTempFile <- tempfile(pattern = "ampvis2_", fileext = ".fa")
-    Biostrings::writeXStringSet(physeq@refseq, filepath = fastaTempFile)
-  } else
-    fastaTempFile <- NULL
-  
-  #load as normally with amp_load
-  ampvis2::amp_load(
-    otutable = otutable,
-    metadata = metadata,
-    tree = tree,
-    fasta = fastaTempFile
-  )
-}
-```
-
 # Version
 1.0 
 
-* Support Request  
-Request sent by the user:
-Mona N. Högberg
+* Support Request
+Request sent by the user:\
+Mona N. Högberg\
 
 # Data  
-96 samples
+96 samples\
 
 * Type of data  
 
@@ -320,18 +236,15 @@ filtRs = file.path(filt_path, paste0(sample.names, "_R_filt.fastq"))
 #dev.off()
 ```
 
-**Inspect read quality profiles**
-Quality profiles of the forward reads:
+**Inspect read quality profiles** \
 
+**Quality profiles of the forward reads:** \
 
-```{r pca, fig.cap="PCA plot of the first 2 principal components. Calculated using the 500 most variable genes.", fig.width=12, fig.height=6, message=FALSE, warning=FALSE, fig.path='PCA/', dev=c('png', 'pdf')}
-```
-
-```{r,fig.cap="QC Foward Reads.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, fig.path='PLOTS/', dev=c('png', 'pdf')}
+```{r,fig.cap="QC Foward Reads.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
 #Filter Sequences
 a <- plotQualityProfile(fnFs[1:6]) #96
 a
-ggsave("./PLOTS/1-fnfQC.pdf", a)
+ggsave("./PLOTS/Full_Data/QC/1-fnfQC.pdf", a)
 ```
 
 In gray-scale is a heat map of the frequency of each quality score at each base position. The median quality score at each position is shown by the green line, and the quartiles of the quality score distribution by the orange lines. The red line shows the scaled proportion of reads that extend to at least that position 
@@ -339,18 +252,25 @@ In gray-scale is a heat map of the frequency of each quality score at each base 
 The forward reads are good quality
 I truncated the forward reads at position 240.
 
-Quality profile of the reverse reads:
-```{r,fig.cap="QC Reverse Reads.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, fig.path='PLOTS/', dev=c('png', 'pdf')}
+**Quality profile of the reverse reads:** \
+
+```{r,fig.cap="QC Reverse Reads.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE,message=FALSE}
 
 #Filter Sequences
 b <- plotQualityProfile(fnRs[1:6]) #96
 b
-ggsave("./PLOTS/2-fnRQC.pdf", b)
-
+ggsave("./PLOTS/Full_Data/QC/2-fnRQC.pdf", b)
 ```
-The reverse reads are of significantly worse quality, especially at the end, which is common in Illumina sequencing. This isn’t too worrisome, as DADA2 incorporates quality information into its error model which makes the algorithm robust to lower quality sequence, but trimming as the average qualities crash will improve the algorithm’s sensitivity to rare sequence variants. Based on these profiles, I truncated the reverse reads at position 200 where the quality distribution crashes.
 
-**Identify primers**
+The reverse reads are of significantly worse quality, especially at the end, which is common in Illumina sequencing. This isn’t too worrisome, as DADA2 incorporates quality information into its error model which makes the algorithm robust to lower quality sequence, but trimming as the average qualities crash will improve the algorithm’s sensitivity to rare sequence variants. Based on these profiles, I truncated the reverse reads at position 200 where the quality distribution crashes. \
+
+**Identify primers** \
+
+The universal primer set 5.8S and ITS1F (Fierer et al., 2005; Yarwood et al., 2010) primers were used to amplify this dataset. We record the DNA sequences, including ambiguous nucleotides, for those primers.
+
+>FWD <- "CTTGGTCATTTAGAGGAAGTAA" \
+>REV <- "GCTGCGTTCTTCATCGATGC"
+
 ```{r,echo=FALSE, eval = FALSE}
 #Defining Primers
 FWD <- "CTTGGTCATTTAGAGGAAGTAA"
@@ -419,17 +339,17 @@ for(i in seq_along(fnFs)) {
 }
 ```
 
-**sanity check of primers and adapters**
-```{r,echo=FALSE, eval = FALSE}
+**sanity check of primers and adapters** \
+```{r,echo=FALSE}
 #sanity check
 rbind(FWD.ForwardReads = sapply(FWD.orients, primerHits, fn = fnFs.cut[[1]]), 
     FWD.ReverseReads = sapply(FWD.orients, primerHits, fn = fnRs.cut[[1]]), 
     REV.ForwardReads = sapply(REV.orients, primerHits, fn = fnFs.cut[[1]]), 
     REV.ReverseReads = sapply(REV.orients, primerHits, fn = fnRs.cut[[1]]))
 ```
-Success! Primers are no longer detected in the cutadapted reads.
+Success! Primers are no longer detected in the cutadapted reads. \
 
-The primer-free sequence files are now ready to be analyzed through the DADA2 pipeline. Similar to the earlier steps of reading in FASTQ files, we read in the names of the cutadapt-ed FASTQ files and applying some string manipulation to get the matched lists of forward and reverse fastq files.
+The primer-free sequence files are now ready to be analyzed through the DADA2 pipeline. \
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Data working 
@@ -443,12 +363,12 @@ cutFs = file.path(path.cut, cutFs)
 cutRs = file.path(path.cut, cutRs)
 ```
 
-```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE}
+```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, include=FALSE}
 #Inspect read quality profiles
 plotQualityProfile(cutFs[1:2])
 ```
 
-```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE}
+```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, include=FALSE}
 plotQualityProfile(cutRs[1:2])
 ```
 
@@ -483,7 +403,7 @@ table(file.exists(filtRs))
 
 ```
 
-```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE}
+```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, include=FALSE}
 plotQualityProfile(filtFs[1:12])
 plotQualityProfile(filtFs[1:12])
 ```
@@ -493,11 +413,25 @@ errF <- learnErrors(filtFs, multithread = TRUE)
 errR <- learnErrors(filtRs, multithread = TRUE)
 ```
 
-```{r, fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE}
+
+**Learn the Error Rates**
+
+
+
+```{r,fig.cap="Error Rate Foward Reads.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
 #Plot Error Rate
-plotErrors(errF, nominalQ = TRUE)
-plotErrors(errR, nominalQ = TRUE)
+c <- plotErrors(errF, nominalQ = TRUE)
+c
+ggsave("./PLOTS/Full_Data/QC/3-errF.pdf", c)
+
+d <- plotErrors(errR, nominalQ = TRUE)
+d
+ggsave("./PLOTS/Full_Data/QC/4-errR.pdf", d)
+
 ```
+
+Everything looks reasonable and we proceed with confidence. \
+
 
 ```{r,echo=FALSE,include=FALSE, eval = FALSE}
 #Dereplicate identical reads
@@ -573,11 +507,13 @@ hist(nchar(getSequences(seqtab.nochim)), main="Distribution of sequence lengths"
 sum(seqtab.nochim)/sum(seqtab)
 ```
 
-```{r,echo=FALSE,include=FALSE, eval = FALSE}
-head(track)
+```{r,fig.cap="QC Foward Reads.",  fig.width = 14.5, fig.height = 7.58, echo=FALSE, warning=FALSE, message=FALSE}
+#head(track)
 ma <- data.matrix(track)
+ggsave("./PLOTS/Full_Data/QC/5-track_reads.pdf")
 barplot((track), main ="Track Reads", font.axis = 1, cex.axis=1, beside=TRUE, ylim=range(pretty(c(0,track))))
-hist(seqComplexity(seqtab.nochim), 100)
+#hist(seqComplexity(seqtab.nochim), 100)
+dev.off()
 
 ```
 
@@ -1655,3 +1591,10 @@ You should soon be contacted by one of our managers with a request to close down
 You are welcome to come back to us with further data analysis request at any time via http://nbis.se/support/support.html.
 
 Thank you for using NBIS.
+
+```{r,eval=FALSE,echo=FALSE}
+# manually run this to render this document to HTML
+#rmarkdown::render("Report_Project6198.Rmd")
+# then run this to convert HTML to PDF (if needed)
+#pagedown::chrome_print("Report_Project6198.html",output="Report_Project6198.pdf")
+```
